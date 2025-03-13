@@ -5,9 +5,11 @@ import (
 	"crypto-trading-bot/internal/data"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/web"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"database/sql"
@@ -21,7 +23,7 @@ type App struct {
 	repo      *data.PostgresRepository
 	exchanges []exchange.Exchange
 	//trader    *trading.Trader
-	//webServer *web.Server
+	webServer *web.Server
 	scheduler *Scheduler
 	logger    *utils.Logger
 }
@@ -44,7 +46,7 @@ func NewApp() *App {
 
 	repo := data.NewPostgresRepository(db, logger)
 	//trader := trading.NewTrader(repo, exchanges, logger)
-	//webServer := web.NewServer(cfg.Web.Port, repo, trader, logger)
+	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo)
 	scheduler := NewScheduler(repo, exchanges, logger)
 
 	return &App{
@@ -53,15 +55,14 @@ func NewApp() *App {
 		repo:      repo,
 		exchanges: exchanges,
 		//trader:    trader,
-		//webServer: webServer,
+		webServer: webServer,
 		scheduler: scheduler,
 		logger:    logger,
 	}
 }
 
 func (a *App) Run() error {
-	//ctx, cancel := context.WithCancel(context.Background())
-	_, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	go func() {
@@ -82,9 +83,9 @@ func (a *App) Run() error {
 		return err
 	}
 
-	// if err := a.webServer.Start(ctx); err != nil {
-	// 	return err
-	// }
+	if err := a.webServer.Start(ctx); err != nil {
+		return err
+	}
 
 	return nil
 }
