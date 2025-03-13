@@ -1,40 +1,35 @@
 package data
 
 import (
-	"crypto-trading-bot/internal/app"
+	"crypto-trading-bot/internal/utils"
 	"database/sql"
-	"fmt"
 
 	_ "github.com/lib/pq"
 )
 
 type PostgresRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *utils.Logger
 }
 
-func NewPostgresRepository(db *sql.DB) *PostgresRepository {
-	return &PostgresRepository{db: db}
+func NewPostgresRepository(db *sql.DB, logger *utils.Logger) *PostgresRepository {
+	return &PostgresRepository{db: db, logger: logger}
 }
 
-func ConnectToDB(cfg *app.Config) (*sql.DB, error) {
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Postgres.Host,
-		cfg.Postgres.Port,
-		cfg.Postgres.User,
-		cfg.Postgres.Password,
-		cfg.Postgres.DBName,
-		cfg.Postgres.SSLMode,
-	)
+func (r *PostgresRepository) SaveMarketData(data *MarketData) error {
+	query := `
+        INSERT INTO market_data (symbol, price, timestamp)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (symbol, timestamp) DO UPDATE
+        SET price = EXCLUDED.price;
+    `
 
-	db, err := sql.Open("postgres", dsn)
+	_, err := r.db.Exec(query, data.Symbol, data.Price, data.Timestamp)
 	if err != nil {
-		return nil, err
+		r.logger.Errorf("Failed to save market data: %v", err)
+		return err
 	}
 
-	if err = db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	r.logger.Infof("Market data saved: %v", data)
+	return nil
 }

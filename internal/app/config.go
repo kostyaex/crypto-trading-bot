@@ -70,3 +70,16 @@ func LoadConfig() *Config {
 
 	return &config
 }
+
+// PostgresDSN возвращает строку подключения к базе данных PostgreSQL
+func (c *Config) PostgresDSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		c.Postgres.Host,
+		c.Postgres.Port,
+		c.Postgres.User,
+		c.Postgres.Password,
+		c.Postgres.DBName,
+		c.Postgres.SSLMode,
+	)
+}
