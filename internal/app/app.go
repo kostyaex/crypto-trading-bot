@@ -11,7 +11,7 @@ import (
 )
 
 type App struct {
-	// cfg        *config.Config
+	cfg *Config
 	// db         *sqlx.DB
 	// exchanges  []exchange.Exchange
 	// trader     *trading.Trader
@@ -19,7 +19,9 @@ type App struct {
 }
 
 func NewApp() *App {
-	// cfg := config.LoadConfig()
+	cfg := LoadConfig()
+
+	fmt.Printf("cfg: %s\n", cfg.Postgres.Host)
 
 	// db, err := sqlx.Connect("postgres", cfg.PostgresDSN)
 	// if err != nil {
@@ -35,14 +37,14 @@ func NewApp() *App {
 	// trader := trading.NewTrader(repo, exchanges)
 	// webServer := web.NewServer(cfg.WebPort, repo, trader)
 
-	// return &App{
-	//     cfg:        cfg,
-	//     db:         db,
-	//     exchanges:  exchanges,
-	//     trader:     trader,
-	//     webServer:  webServer,
-	// }
-	return &App{}
+	return &App{
+		cfg: cfg,
+		// db:         db,
+		// exchanges:  exchanges,
+		// trader:     trader,
+		// webServer:  webServer,
+	}
+
 }
 
 func (a *App) Run() error {

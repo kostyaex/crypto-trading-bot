@@ -1,0 +1,30 @@
+# config.yaml
+postgres:
+  host: localhost
+  port: 5432
+  user: your_user
+  password: your_password
+  dbname: your_dbname
+  sslmode: disable
+
+web:
+  port: 8080
+
+binance:
+  apiKey: your_binance_api_key
+  apiSecret: your_binance_api_secret
+
+huobi:
+  apiKey: your_huobi_api_key
+  apiSecret: your_huobi_api_secret
+
+logging:
+  level: info
+
+security:
+  jwtSecret: your_jwt_secret
+
+backtesting:
+  defaultCapital: 10000
+  defaultCommission: 0.001
+  defaultSpread: 0.0002

@@ -1,7 +1,7 @@
 package main
 
 import (
-	app "crypto-trading-bot/internal"
+	"crypto-trading-bot/internal/app"
 	"log"
 )
 
