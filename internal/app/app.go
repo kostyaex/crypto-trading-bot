@@ -12,14 +12,12 @@ import (
 	"strconv"
 	"syscall"
 
-	"database/sql"
-
 	_ "github.com/lib/pq"
 )
 
 type App struct {
 	cfg       *Config
-	db        *sql.DB
+	db        *data.DB
 	repo      *data.PostgresRepository
 	exchanges []exchange.Exchange
 	//trader    *trading.Trader
@@ -31,7 +29,7 @@ type App struct {
 func NewApp() *App {
 	cfg := LoadConfig()
 
-	db, err := sql.Open("postgres", cfg.PostgresDSN())
+	db, err := data.NewDB(cfg.PostgresDSN())
 
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -41,7 +39,7 @@ func NewApp() *App {
 
 	exchanges := []exchange.Exchange{
 		exchange.NewBinance(cfg.Binance.APIKey, cfg.Binance.APISecret, logger),
-		exchange.NewHuobi(cfg.Huobi.APIKey, cfg.Huobi.APISecret, logger),
+		//exchange.NewHuobi(cfg.Huobi.APIKey, cfg.Huobi.APISecret, logger),
 	}
 
 	repo := data.NewPostgresRepository(db, logger)
@@ -78,7 +76,7 @@ func (a *App) Run() error {
 
 	// Добавление задачи для загрузки данных с бирж каждые 5 минут
 	task := NewDataFetchingTask(a.repo, a.exchanges, a.logger)
-	_, err := a.scheduler.AddJob("@every 5m", task)
+	_, err := a.scheduler.AddJob("@every 1m", task)
 	if err != nil {
 		return err
 	}

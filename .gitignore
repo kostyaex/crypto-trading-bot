@@ -1,2 +1,4 @@
 config.yaml
 docker-compose.yml
+Makefile
+.vscode/launch.json

@@ -1,0 +1,9 @@
+-- 000001_create_tables.down.sql
+
+DROP TABLE IF EXISTS backtest_results CASCADE;
+DROP TABLE IF EXISTS trade_operations CASCADE;
+DROP TABLE IF EXISTS behavior_trees CASCADE;
+DROP TABLE IF EXISTS strategies CASCADE;
+DROP TABLE IF EXISTS indicators CASCADE;
+DROP TABLE IF EXISTS exchanges CASCADE;
+DROP TABLE IF EXISTS market_data CASCADE;

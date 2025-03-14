@@ -2,17 +2,14 @@ package data
 
 import (
 	"crypto-trading-bot/internal/utils"
-	"database/sql"
-
-	_ "github.com/lib/pq"
 )
 
 type PostgresRepository struct {
-	db     *sql.DB
+	db     *DB
 	logger *utils.Logger
 }
 
-func NewPostgresRepository(db *sql.DB, logger *utils.Logger) *PostgresRepository {
+func NewPostgresRepository(db *DB, logger *utils.Logger) *PostgresRepository {
 	return &PostgresRepository{db: db, logger: logger}
 }
 
