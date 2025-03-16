@@ -2,7 +2,9 @@ package data
 
 import (
 	"context"
+	"crypto-trading-bot/internal/config"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -12,8 +14,8 @@ type DB struct {
 	*sql.DB
 }
 
-func NewDB(DSN string) (*DB, error) {
-	db, err := sql.Open("postgres", DSN)
+func NewDB(config *config.Config) (*DB, error) {
+	db, err := sql.Open("postgres", PostgresDSN(config))
 	if err != nil {
 		return nil, err
 	}
@@ -37,4 +39,17 @@ func NewDB(DSN string) (*DB, error) {
 	}
 
 	return &DB{db}, nil
+}
+
+// PostgresDSN возвращает строку подключения к базе данных PostgreSQL
+func PostgresDSN(c *config.Config) string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		c.Postgres.Host,
+		c.Postgres.Port,
+		c.Postgres.User,
+		c.Postgres.Password,
+		c.Postgres.DBName,
+		c.Postgres.SSLMode,
+	)
 }

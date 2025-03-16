@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto-trading-bot/internal/config"
 	"crypto-trading-bot/internal/data"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/utils"
@@ -16,7 +17,7 @@ import (
 )
 
 type App struct {
-	cfg       *Config
+	cfg       *config.Config
 	db        *data.DB
 	repo      *data.PostgresRepository
 	exchanges []exchange.Exchange
@@ -27,9 +28,9 @@ type App struct {
 }
 
 func NewApp() *App {
-	cfg := LoadConfig()
+	cfg := config.LoadConfig()
 
-	db, err := data.NewDB(cfg.PostgresDSN())
+	db, err := data.NewDB(cfg)
 
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
