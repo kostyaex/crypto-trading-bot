@@ -50,6 +50,7 @@ type Config struct {
 // LoadConfig загружает конфигурацию из файла и переменных окружения
 func LoadConfig() *Config {
 	viper.AddConfigPath("./")
+	viper.AddConfigPath("../")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 

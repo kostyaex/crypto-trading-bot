@@ -7,21 +7,24 @@ import (
 )
 
 type DataFetchingTask struct {
-	repo      *data.PostgresRepository
-	exchanges []exchange.Exchange
-	logger    *utils.Logger
+	repo           *data.PostgresRepository
+	exchanges      []exchange.Exchange
+	logger         *utils.Logger
+	eventPublisher *EventPublisher
 }
 
-func NewDataFetchingTask(repo *data.PostgresRepository, exchanges []exchange.Exchange, logger *utils.Logger) *DataFetchingTask {
+func NewDataFetchingTask(repo *data.PostgresRepository, exchanges []exchange.Exchange, logger *utils.Logger, eventPublisher *EventPublisher) *DataFetchingTask {
 	return &DataFetchingTask{
-		repo:      repo,
-		exchanges: exchanges,
-		logger:    logger,
+		repo:           repo,
+		exchanges:      exchanges,
+		logger:         logger,
+		eventPublisher: eventPublisher,
 	}
 }
 
 func (t *DataFetchingTask) Run() {
 	t.logger.Infof("Starting data fetching task")
+	var allMarketData []*data.MarketData
 	for _, ex := range t.exchanges {
 		t.logger.Infof("Fetching data from exchange: %s", ex.GetName())
 		marketData, err := ex.GetMarketData()
@@ -36,6 +39,13 @@ func (t *DataFetchingTask) Run() {
 				t.logger.Infof("Market data saved for exchange %s: %v", ex.GetName(), data)
 			}
 		}
+		allMarketData = append(allMarketData, marketData...)
 	}
 	t.logger.Infof("Data fetching task completed")
+
+	// Публикация события о загрузке рыночных данных
+	event := MarketDataLoadedEvent{
+		MarketData: allMarketData,
+	}
+	t.eventPublisher.Publish(event)
 }

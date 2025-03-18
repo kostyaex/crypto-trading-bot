@@ -3,19 +3,22 @@ package data
 import (
 	"context"
 	"crypto-trading-bot/internal/config"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/golang-migrate/migrate"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type DB struct {
-	*sql.DB
+	*sqlx.DB
 }
 
 func NewDB(config *config.Config) (*DB, error) {
-	db, err := sql.Open("postgres", PostgresDSN(config))
+	db, err := sqlx.Connect("postgres", PostgresDSN(config))
 	if err != nil {
 		return nil, err
 	}
@@ -52,4 +55,20 @@ func PostgresDSN(c *config.Config) string {
 		c.Postgres.DBName,
 		c.Postgres.SSLMode,
 	)
+}
+
+func ApplyMigrations(dsn string) error {
+	m, err := migrate.New(
+		"file://migrations",
+		dsn,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+
+	return nil
 }

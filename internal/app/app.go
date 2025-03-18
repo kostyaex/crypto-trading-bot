@@ -12,8 +12,6 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	_ "github.com/lib/pq"
 )
 
 type App struct {
@@ -22,9 +20,10 @@ type App struct {
 	repo      *data.PostgresRepository
 	exchanges []exchange.Exchange
 	//trader    *trading.Trader
-	webServer *web.Server
-	scheduler *Scheduler
-	logger    *utils.Logger
+	webServer      *web.Server
+	scheduler      *Scheduler
+	logger         *utils.Logger
+	eventPublisher *EventPublisher
 }
 
 func NewApp() *App {
@@ -35,6 +34,10 @@ func NewApp() *App {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	// if err := data.applyMigrations(cfg.PostgresDSN()); err != nil {
+	//     log.Fatalf("Failed to apply migrations: %v", err)
+	// }
 
 	logger := utils.NewLogger(cfg.Logging.Level)
 
@@ -47,6 +50,11 @@ func NewApp() *App {
 	//trader := trading.NewTrader(repo, exchanges, logger)
 	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo)
 	scheduler := NewScheduler(repo, exchanges, logger)
+	eventPublisher := NewEventPublisher()
+
+	// Создание подписчика для анализа данных
+	dataAnalysisSubscriber := NewDataAnalysisSubscriber(repo, logger)
+	eventPublisher.Subscribe(dataAnalysisSubscriber)
 
 	return &App{
 		cfg:       cfg,
@@ -54,9 +62,10 @@ func NewApp() *App {
 		repo:      repo,
 		exchanges: exchanges,
 		//trader:    trader,
-		webServer: webServer,
-		scheduler: scheduler,
-		logger:    logger,
+		webServer:      webServer,
+		scheduler:      scheduler,
+		logger:         logger,
+		eventPublisher: eventPublisher,
 	}
 }
 
@@ -76,8 +85,8 @@ func (a *App) Run() error {
 	defer a.scheduler.Stop()
 
 	// Добавление задачи для загрузки данных с бирж каждые 5 минут
-	task := NewDataFetchingTask(a.repo, a.exchanges, a.logger)
-	_, err := a.scheduler.AddJob("@every 1m", task)
+	task := NewDataFetchingTask(a.repo, a.exchanges, a.logger, a.eventPublisher)
+	_, err := a.scheduler.AddJob("@every 5m", task)
 	if err != nil {
 		return err
 	}
