@@ -53,8 +53,12 @@ func NewApp() *App {
 	eventPublisher := NewEventPublisher()
 
 	// Создание подписчика для анализа данных
-	dataAnalysisSubscriber := NewDataAnalysisSubscriber(repo, logger)
+	dataAnalysisSubscriber := NewDataAnalysisSubscriber(repo, logger, eventPublisher)
 	eventPublisher.Subscribe(dataAnalysisSubscriber)
+
+	// Создание подписчика для обновления состояния стратегий
+	strategyUpdateSubscriber := NewStrategyUpdateSubscriber(repo, logger)
+	eventPublisher.Subscribe(strategyUpdateSubscriber)
 
 	return &App{
 		cfg:       cfg,

@@ -2,6 +2,7 @@ package app
 
 import (
 	"crypto-trading-bot/internal/data"
+	"time"
 )
 
 // MarketDataLoadedEvent представляет событие загрузки рыночных данных
@@ -17,4 +18,21 @@ func (e MarketDataLoadedEvent) Type() string {
 // Payload возвращает полезную нагрузку события
 func (e MarketDataLoadedEvent) Payload() interface{} {
 	return e.MarketData
+}
+
+// AnalysisCompletedEvent представляет событие завершения анализа данных
+type AnalysisCompletedEvent struct {
+	Symbol     string
+	Indicators map[string]float64
+	Timestamp  time.Time
+}
+
+// Type возвращает тип события
+func (e AnalysisCompletedEvent) Type() string {
+	return "AnalysisCompleted"
+}
+
+// Payload возвращает полезную нагрузку события
+func (e AnalysisCompletedEvent) Payload() interface{} {
+	return e
 }

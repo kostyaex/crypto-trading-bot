@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS strategies (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     description TEXT,
-    config JSONB NOT NULL
+    config JSONB NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Таблица для хранения состояний поведенческих деревьев

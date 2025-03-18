@@ -8,15 +8,17 @@ import (
 
 // DataAnalysisSubscriber представляет подписчика, который анализирует данные
 type DataAnalysisSubscriber struct {
-	repo   *data.PostgresRepository
-	logger *utils.Logger
+	repo           *data.PostgresRepository
+	logger         *utils.Logger
+	eventPublisher *EventPublisher
 }
 
 // NewDataAnalysisSubscriber создает нового подписчика для анализа данных
-func NewDataAnalysisSubscriber(repo *data.PostgresRepository, logger *utils.Logger) *DataAnalysisSubscriber {
+func NewDataAnalysisSubscriber(repo *data.PostgresRepository, logger *utils.Logger, eventPublisher *EventPublisher) *DataAnalysisSubscriber {
 	return &DataAnalysisSubscriber{
-		repo:   repo,
-		logger: logger,
+		repo:           repo,
+		logger:         logger,
+		eventPublisher: eventPublisher,
 	}
 }
 
@@ -63,5 +65,17 @@ func (das *DataAnalysisSubscriber) Handle(event Event) {
 		// if err := das.repo.SaveIndicator(md.Symbol, "MACDSignal", signal, md.Timestamp); err != nil {
 		// 	das.logger.Errorf("Failed to save MACD Signal for symbol %s: %v", md.Symbol, err)
 		// }
+
+		// Публикация события о завершении анализа данных
+		analysisEvent := AnalysisCompletedEvent{
+			Symbol: md.Symbol,
+			Indicators: map[string]float64{
+				"RSI": rsi,
+				//"MACD":       macd,
+				//"MACDSignal": signal,
+			},
+			Timestamp: md.Timestamp,
+		}
+		das.eventPublisher.Publish(analysisEvent)
 	}
 }
