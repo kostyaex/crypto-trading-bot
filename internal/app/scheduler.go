@@ -1,8 +1,8 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/data"
 	"crypto-trading-bot/internal/exchange"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
 	"log"
 
@@ -11,12 +11,12 @@ import (
 
 type Scheduler struct {
 	c         *cron.Cron
-	repo      *data.PostgresRepository
+	repo      *repositories.Repository
 	exchanges []exchange.Exchange
 	logger    *utils.Logger
 }
 
-func NewScheduler(repo *data.PostgresRepository, exchanges []exchange.Exchange, logger *utils.Logger) *Scheduler {
+func NewScheduler(repo *repositories.Repository, exchanges []exchange.Exchange, logger *utils.Logger) *Scheduler {
 	c := cron.New(cron.WithLogger(cron.VerbosePrintfLogger(log.New(logger.Writer(), "cron: ", log.LstdFlags))))
 	return &Scheduler{
 		c:         c,

@@ -1,7 +1,7 @@
 package exchange
 
 import (
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 	"encoding/json"
 	"fmt"
@@ -25,7 +25,7 @@ func NewHuobi(apiKey, apiSecret string, logger *utils.Logger) *Huobi {
 	}
 }
 
-func (h *Huobi) GetMarketData() ([]*data.MarketData, error) {
+func (h *Huobi) GetMarketData() ([]*models.MarketData, error) {
 	url := "https://api.huobi.pro/market/tickers"
 
 	resp, err := http.Get(url)
@@ -59,7 +59,7 @@ func (h *Huobi) GetMarketData() ([]*data.MarketData, error) {
 		return nil, fmt.Errorf("invalid status: %s", result.Status)
 	}
 
-	var marketData []*data.MarketData
+	var marketData []*models.MarketData
 	for _, item := range result.Data {
 		price, err := strconv.ParseFloat(item.Close, 64)
 		if err != nil {
@@ -67,7 +67,7 @@ func (h *Huobi) GetMarketData() ([]*data.MarketData, error) {
 			continue
 		}
 
-		marketData = append(marketData, &data.MarketData{
+		marketData = append(marketData, &models.MarketData{
 			Symbol:    item.Symbol,
 			Price:     price,
 			Timestamp: time.Now(),

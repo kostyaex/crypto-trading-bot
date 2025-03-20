@@ -1,13 +1,13 @@
 package exchange
 
 import (
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 )
 
 type Exchange interface {
 	GetName() string
-	GetMarketData() ([]*data.MarketData, error)
+	GetMarketData() ([]*models.MarketData, error)
 }
 
 type exchangeBase struct {

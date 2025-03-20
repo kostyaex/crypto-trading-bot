@@ -1,13 +1,14 @@
 package analysis
 
 import (
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/internal/repositories"
 	"errors"
 	"math"
 )
 
 // CalculateRSI вычисляет индикатор RSI для заданного символа
-func CalculateRSI(repo *data.PostgresRepository, symbol string, period int) (float64, error) {
+func CalculateRSI(repo *repositories.Repository, symbol string, period int) (float64, error) {
 	marketData, err := repo.GetMarketData(symbol, period)
 	if err != nil {
 		return 0, err
@@ -43,7 +44,7 @@ func CalculateRSI(repo *data.PostgresRepository, symbol string, period int) (flo
 }
 
 // CalculateMACD вычисляет индикатор MACD для заданного символа
-func CalculateMACD(repo *data.PostgresRepository, symbol string, fastPeriod, slowPeriod, signalPeriod int) (float64, float64, error) {
+func CalculateMACD(repo *repositories.Repository, symbol string, fastPeriod, slowPeriod, signalPeriod int) (float64, float64, error) {
 	marketData, err := repo.GetMarketData(symbol, slowPeriod+signalPeriod-1)
 	if err != nil {
 		return 0, 0, err
@@ -69,9 +70,9 @@ func CalculateMACD(repo *data.PostgresRepository, symbol string, fastPeriod, slo
 	}
 
 	// Создаем срез данных для вычисления сигнальной линии
-	macdMarketData := make([]*data.MarketData, len(macdValues))
+	macdMarketData := make([]*models.MarketData, len(macdValues))
 	for i, macdValue := range macdValues {
-		macdMarketData[i] = &data.MarketData{
+		macdMarketData[i] = &models.MarketData{
 			Symbol:    symbol,
 			Price:     macdValue,
 			Timestamp: marketData[i+fastPeriod-1].Timestamp,
@@ -94,7 +95,7 @@ func CalculateMACD(repo *data.PostgresRepository, symbol string, fastPeriod, slo
 }
 
 // calculateEMA вычисляет экспоненциальное скользящее среднее
-func calculateEMA(marketData []*data.MarketData, period int) ([]float64, error) {
+func calculateEMA(marketData []*models.MarketData, period int) ([]float64, error) {
 	if len(marketData) < period {
 		return nil, errors.New("not enough data points to calculate EMA")
 	}
@@ -116,7 +117,7 @@ func calculateEMA(marketData []*data.MarketData, period int) ([]float64, error) 
 }
 
 // calculateEMAMarketData вычисляет экспоненциальное скользящее среднее для среза данных
-func calculateEMAMarketData(marketData []*data.MarketData, period int) ([]float64, error) {
+func calculateEMAMarketData(marketData []*models.MarketData, period int) ([]float64, error) {
 	if len(marketData) < period {
 		return nil, errors.New("not enough data points to calculate EMA")
 	}

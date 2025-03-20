@@ -2,19 +2,20 @@ package app
 
 import (
 	"crypto-trading-bot/internal/analysis"
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
 )
 
 // DataAnalysisSubscriber представляет подписчика, который анализирует данные
 type DataAnalysisSubscriber struct {
-	repo           *data.PostgresRepository
+	repo           *repositories.Repository
 	logger         *utils.Logger
 	eventPublisher *EventPublisher
 }
 
 // NewDataAnalysisSubscriber создает нового подписчика для анализа данных
-func NewDataAnalysisSubscriber(repo *data.PostgresRepository, logger *utils.Logger, eventPublisher *EventPublisher) *DataAnalysisSubscriber {
+func NewDataAnalysisSubscriber(repo *repositories.Repository, logger *utils.Logger, eventPublisher *EventPublisher) *DataAnalysisSubscriber {
 	return &DataAnalysisSubscriber{
 		repo:           repo,
 		logger:         logger,
@@ -28,7 +29,7 @@ func (das *DataAnalysisSubscriber) Handle(event Event) {
 		return
 	}
 
-	marketData, ok := event.Payload().([]*data.MarketData)
+	marketData, ok := event.Payload().([]*models.MarketData)
 	if !ok {
 		das.logger.Errorf("Invalid payload type for MarketDataLoaded event")
 		return

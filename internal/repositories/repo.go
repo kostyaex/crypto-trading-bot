@@ -1,7 +1,7 @@
-package data
+package repositories
 
 import (
-	"crypto-trading-bot/internal/strategy"
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 	"database/sql"
 	"encoding/json"
@@ -9,16 +9,21 @@ import (
 	"time"
 )
 
-type PostgresRepository struct {
-	db     *DB
-	logger *utils.Logger
+type Repository struct {
+	db       *DB
+	logger   *utils.Logger
+	Strategy StrategyRepository
 }
 
-func NewPostgresRepository(db *DB, logger *utils.Logger) *PostgresRepository {
-	return &PostgresRepository{db: db, logger: logger}
+func NewRepository(db *DB, logger *utils.Logger) *Repository {
+	return &Repository{
+		db:       db,
+		logger:   logger,
+		Strategy: NewStrategyRepository(db, logger),
+	}
 }
 
-func (r *PostgresRepository) SaveMarketData(data *MarketData) error {
+func (r *Repository) SaveMarketData(data *models.MarketData) error {
 	query := `
         INSERT INTO market_data (symbol, price, timestamp)
         VALUES ($1, $2, $3)
@@ -36,7 +41,7 @@ func (r *PostgresRepository) SaveMarketData(data *MarketData) error {
 	return nil
 }
 
-func (r *PostgresRepository) SaveIndicator(symbol, indicatorName string, value float64, timestamp time.Time) error {
+func (r *Repository) SaveIndicator(symbol, indicatorName string, value float64, timestamp time.Time) error {
 	query := `
         INSERT INTO indicators (symbol, indicator_name, value, timestamp)
         VALUES ($1, $2, $3, $4)
@@ -54,7 +59,7 @@ func (r *PostgresRepository) SaveIndicator(symbol, indicatorName string, value f
 	return nil
 }
 
-func (r *PostgresRepository) GetMarketData(symbol string, limit int) ([]*MarketData, error) {
+func (r *Repository) GetMarketData(symbol string, limit int) ([]*models.MarketData, error) {
 	query := `
         SELECT symbol, price, timestamp
         FROM market_data
@@ -63,7 +68,7 @@ func (r *PostgresRepository) GetMarketData(symbol string, limit int) ([]*MarketD
         LIMIT $2;
     `
 
-	var marketData []*MarketData
+	var marketData []*models.MarketData
 	err := r.db.Select(&marketData, query, symbol, limit)
 	if err != nil {
 		r.logger.Errorf("Failed to get market data for symbol %s: %v", symbol, err)
@@ -79,25 +84,7 @@ func (r *PostgresRepository) GetMarketData(symbol string, limit int) ([]*MarketD
 	return marketData, nil
 }
 
-func (r *PostgresRepository) GetActiveStrategies() ([]*strategy.Strategy, error) {
-	query := `
-        SELECT id, name, description, config
-        FROM strategies
-        WHERE active = true;
-    `
-
-	var strategies []*strategy.Strategy
-	err := r.db.Select(&strategies, query)
-	if err != nil {
-		r.logger.Errorf("Failed to get active strategies: %v", err)
-		return nil, err
-	}
-
-	r.logger.Infof("Active strategies retrieved: %v", strategies)
-	return strategies, nil
-}
-
-func (r *PostgresRepository) GetBehaviorTreeState(strategyID int) (map[string]interface{}, error) {
+func (r *Repository) GetBehaviorTreeState(strategyID int) (map[string]interface{}, error) {
 	query := `
         SELECT state
         FROM behavior_trees
@@ -127,7 +114,7 @@ func (r *PostgresRepository) GetBehaviorTreeState(strategyID int) (map[string]in
 	return state, nil
 }
 
-func (r *PostgresRepository) SaveBehaviorTreeState(strategyID int, state map[string]interface{}) error {
+func (r *Repository) SaveBehaviorTreeState(strategyID int, state map[string]interface{}) error {
 	stateJSON, err := json.Marshal(state)
 	if err != nil {
 		r.logger.Errorf("Failed to marshal behavior tree state for strategy ID %d: %v", strategyID, err)

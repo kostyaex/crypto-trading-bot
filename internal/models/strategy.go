@@ -1,8 +1,6 @@
-package strategy
+package models
 
-import (
-	"encoding/json"
-)
+import "encoding/json"
 
 // Strategy представляет торговую стратегию
 type Strategy struct {

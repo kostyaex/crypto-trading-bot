@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"crypto-trading-bot/internal/config"
-	"crypto-trading-bot/internal/data"
 	"crypto-trading-bot/internal/exchange"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
 	"crypto-trading-bot/internal/web"
 	"log"
@@ -16,8 +16,8 @@ import (
 
 type App struct {
 	cfg       *config.Config
-	db        *data.DB
-	repo      *data.PostgresRepository
+	db        *repositories.DB
+	repo      *repositories.Repository
 	exchanges []exchange.Exchange
 	//trader    *trading.Trader
 	webServer      *web.Server
@@ -29,7 +29,7 @@ type App struct {
 func NewApp() *App {
 	cfg := config.LoadConfig()
 
-	db, err := data.NewDB(cfg)
+	db, err := repositories.NewDB(cfg)
 
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -46,9 +46,9 @@ func NewApp() *App {
 		//exchange.NewHuobi(cfg.Huobi.APIKey, cfg.Huobi.APISecret, logger),
 	}
 
-	repo := data.NewPostgresRepository(db, logger)
+	repo := repositories.NewRepository(db, logger)
 	//trader := trading.NewTrader(repo, exchanges, logger)
-	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo)
+	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger)
 	scheduler := NewScheduler(repo, exchanges, logger)
 	eventPublisher := NewEventPublisher()
 

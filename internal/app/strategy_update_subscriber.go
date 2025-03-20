@@ -1,19 +1,19 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/strategy"
 	"crypto-trading-bot/internal/utils"
 )
 
 // StrategyUpdateSubscriber представляет подписчика, который обновляет состояния стратегий
 type StrategyUpdateSubscriber struct {
-	repo   *data.PostgresRepository
+	repo   *repositories.Repository
 	logger *utils.Logger
 }
 
 // NewStrategyUpdateSubscriber создает нового подписчика для обновления состояний стратегий
-func NewStrategyUpdateSubscriber(repo *data.PostgresRepository, logger *utils.Logger) *StrategyUpdateSubscriber {
+func NewStrategyUpdateSubscriber(repo *repositories.Repository, logger *utils.Logger) *StrategyUpdateSubscriber {
 	return &StrategyUpdateSubscriber{
 		repo:   repo,
 		logger: logger,
@@ -35,7 +35,7 @@ func (sus *StrategyUpdateSubscriber) Handle(event Event) {
 	sus.logger.Infof("Updating strategy states for symbol: %s, timestamp: %v", analysisEvent.Symbol, analysisEvent.Timestamp)
 
 	// Получение всех активных стратегий
-	strategies, err := sus.repo.GetActiveStrategies()
+	strategies, err := sus.repo.Strategy.GetActiveStrategies()
 	if err != nil {
 		sus.logger.Errorf("Failed to get active strategies: %v", err)
 		return

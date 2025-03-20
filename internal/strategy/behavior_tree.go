@@ -51,22 +51,31 @@ func (en *ExampleNode) Execute(symbol string, indicators map[string]float64, tim
 		return false, fmt.Errorf("RSI indicator not found")
 	}
 
-	macd, ok := indicators["MACD"]
-	if !ok {
-		return false, fmt.Errorf("MACD indicator not found")
-	}
+	// macd, ok := indicators["MACD"]
+	// if !ok {
+	// 	return false, fmt.Errorf("MACD indicator not found")
+	// }
 
-	macdSignal, ok := indicators["MACDSignal"]
-	if !ok {
-		return false, fmt.Errorf("MACD Signal indicator not found")
-	}
+	// macdSignal, ok := indicators["MACDSignal"]
+	// if !ok {
+	// 	return false, fmt.Errorf("MACD Signal indicator not found")
+	// }
 
-	// Пример логики узла
-	if rsi < 30 && macd > macdSignal {
+	// // Пример логики узла
+	// if rsi < 30 && macd > macdSignal {
+	// 	return true, nil // Бай
+	// }
+
+	// if rsi > 70 && macd < macdSignal {
+	// 	return true, nil // Селл
+	// }
+
+	//Пример логики узла
+	if rsi < 30 {
 		return true, nil // Бай
 	}
 
-	if rsi > 70 && macd < macdSignal {
+	if rsi > 70 {
 		return true, nil // Селл
 	}
 

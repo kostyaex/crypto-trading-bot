@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"context"
-	"crypto-trading-bot/internal/data"
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 	"strconv"
 	"time"
@@ -23,7 +23,7 @@ func NewBinance(apiKey, apiSecret string, logger *utils.Logger) *Binance {
 	}
 }
 
-func (b *Binance) GetMarketData() ([]*data.MarketData, error) {
+func (b *Binance) GetMarketData() ([]*models.MarketData, error) {
 	//symbols, err := b.client.NewListSymbolsService().Do(context.Background())
 	// symbols, err := b.client.NewListSymbolTickerService().Do(context.Background())
 	// if err != nil {
@@ -56,7 +56,7 @@ func (b *Binance) GetMarketData() ([]*data.MarketData, error) {
 	// }
 
 	symbol := "BTCUSDT"
-	var marketData []*data.MarketData
+	var marketData []*models.MarketData
 
 	ticker, err := b.client.NewListPricesService().Symbol(symbol).Do(context.Background())
 	if err != nil {
@@ -71,7 +71,7 @@ func (b *Binance) GetMarketData() ([]*data.MarketData, error) {
 			continue
 		}
 
-		marketData = append(marketData, &data.MarketData{
+		marketData = append(marketData, &models.MarketData{
 			Symbol:    sp.Symbol,
 			Price:     price,
 			Timestamp: time.Now(),

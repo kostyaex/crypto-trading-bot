@@ -1,0 +1,96 @@
+package ui
+
+import (
+	"strconv"
+	"path"
+	"crypto-trading-bot/internal/models"
+)
+
+templ headerComponent(title string) {
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{ title }</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 0;
+				padding: 0;
+				background-color: #f4f4f9;
+			}
+			.container {
+				width: 80%;
+				margin: 0 auto;
+				padding: 20px;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 20px;
+			}
+			th, td {
+				border: 1px solid #ddd;
+				padding: 8px;
+				text-align: left;
+			}
+			th {
+				background-color: #f2f2f2;
+			}
+			tr:hover {
+				background-color: #f1f1f1;
+			}
+			.button {
+				display: inline-block;
+				padding: 10px 20px;
+				margin-top: 20px;
+				background-color: #007bff;
+				color: white;
+				text-decoration: none;
+				border-radius: 5px;
+			}
+			.button:hover {
+				background-color: #0056b3;
+			}
+		</style>
+	</head>
+}
+
+templ IndexComponent(strategies []*models.Strategy) {
+	<!DOCTYPE html>
+	<html lang="en">
+	@headerComponent("Crypto Trading Bot")
+	<body>
+		<div class="container">
+			<h1>Trading Strategies</h1>
+			<a href="/strategies/new" class="button">Add New Strategy</a>
+			<table>
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Name</th>
+						<th>Description</th>
+						<th>Active</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+				for _, strat := range strategies {
+					<tr>
+						<td>{strconv.Itoa(strat.ID)}</td>
+						<td>{strat.Name}</td>
+						<td>{strat.Description}</td>
+						<td>{strconv.FormatBool(strat.Active)}</td>
+						<td>
+							<a href={ "/"+templ.SafeURL(path.Join("strategies", strconv.Itoa(strat.ID), "edit", "/")) } class="button">Edit</a>
+							<form action={ "/"+templ.SafeURL(path.Join("strategies", strconv.Itoa(strat.ID),"delete", "/")) } method="POST" style="display:inline;">
+								<button type="submit" class="button" style="background-color: #dc3545;">Delete</button>
+							</form>
+						</td>
+					</tr>
+				}
+				</tbody>
+			</table>
+		</div>
+	</body>
+	</html>
+}

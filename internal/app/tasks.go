@@ -1,19 +1,20 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/data"
 	"crypto-trading-bot/internal/exchange"
+	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
 )
 
 type DataFetchingTask struct {
-	repo           *data.PostgresRepository
+	repo           *repositories.Repository
 	exchanges      []exchange.Exchange
 	logger         *utils.Logger
 	eventPublisher *EventPublisher
 }
 
-func NewDataFetchingTask(repo *data.PostgresRepository, exchanges []exchange.Exchange, logger *utils.Logger, eventPublisher *EventPublisher) *DataFetchingTask {
+func NewDataFetchingTask(repo *repositories.Repository, exchanges []exchange.Exchange, logger *utils.Logger, eventPublisher *EventPublisher) *DataFetchingTask {
 	return &DataFetchingTask{
 		repo:           repo,
 		exchanges:      exchanges,
@@ -24,7 +25,7 @@ func NewDataFetchingTask(repo *data.PostgresRepository, exchanges []exchange.Exc
 
 func (t *DataFetchingTask) Run() {
 	t.logger.Infof("Starting data fetching task")
-	var allMarketData []*data.MarketData
+	var allMarketData []*models.MarketData
 	for _, ex := range t.exchanges {
 		t.logger.Infof("Fetching data from exchange: %s", ex.GetName())
 		marketData, err := ex.GetMarketData()
