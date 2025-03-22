@@ -1,0 +1,67 @@
+// {{ .PackageName }}/repositories/{{ .ModelName }}_repo.go
+
+package repositories
+
+import (
+    "{{ .PackageName }}/internal/models"
+    "{{ .PackageName }}/internal/utils"
+    "database/sql"
+    "fmt"
+)
+
+// {{ .ModelName }}Repository определяет интерфейс для работы с {{ .ModelName }}.
+type {{ .ModelName }}Repository interface {
+    Get{{ .ModelName }}(id int) (*models.{{ .ModelName }}, error)
+    Save{{ .ModelName }}({{ .ModelNameLower }} *models.{{ .ModelName }}) error
+}
+
+// {{ .ModelNameLower }}Repository реализует {{ .ModelName }}Repository.
+type {{ .ModelNameLower }}Repository struct {
+    db     *sql.DB
+    logger *utils.Logger
+}
+
+// New{{ .ModelName }}Repository создает новый экземпляр {{ .ModelName }}Repository.
+func New{{ .ModelName }}Repository(db *sql.DB, logger *utils.Logger) {{ .ModelName }}Repository {
+    return &{{ .ModelNameLower }}Repository{db: db, logger: logger}
+}
+
+// Get{{ .ModelName }} находит {{ .ModelNameLower }} по ID.
+func (r *{{ .ModelNameLower }}Repository) Get{{ .ModelName }}(id int) (*models.{{ .ModelName }}, error) {
+    var {{ .ModelNameLower }} models.{{ .ModelName }}
+    query := "SELECT id, {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }}{{ end }}, created_at, updated_at FROM {{ .ModelNameLower }}s WHERE id = ?"
+    err := r.db.QueryRow(query, id).Scan(
+        &{{ .ModelNameLower }}.ID,
+        {{ range .Fields }}
+        &{{ .ModelNameLower }}.{{ .FieldName }},
+        {{ end }}
+        &{{ .ModelNameLower }}.CreatedAt,
+        &{{ .ModelNameLower }}.UpdatedAt,
+    )
+    if err != nil {
+        if err == sql.ErrNoRows {
+            r.logger.Errorf("{{ .ModelNameLower }} with ID %d not found", id)
+            return nil, fmt.Errorf("{{ .ModelNameLower }} not found")
+        }
+        r.logger.Errorf("Failed to get {{ .ModelNameLower }}: %v", err)
+        return nil, err
+    }
+    return &{{ .ModelNameLower }}, nil
+}
+
+// Save{{ .ModelName }} сохраняет {{ .ModelNameLower }} в базу данных.
+func (r *{{ .ModelNameLower }}Repository) Save{{ .ModelName }}({{ .ModelNameLower }} *models.{{ .ModelName }}) error {
+    query := "INSERT INTO {{ .ModelNameLower }}s ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }}{{ end }}, created_at, updated_at) VALUES ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}?{{ end }}, ?, ?) ON DUPLICATE KEY UPDATE {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }} = VALUES({{ $field.FieldName }}){{ end }}, updated_at = VALUES(updated_at)"
+    _, err := r.db.Exec(query,
+        {{ range .Fields }}
+        {{ .ModelNameLower }}.{{ .FieldName }},
+        {{ end }}
+        {{ .ModelNameLower }}.CreatedAt,
+        {{ .ModelNameLower }}.UpdatedAt,
+    )
+    if err != nil {
+        r.logger.Errorf("Failed to save {{ .ModelNameLower }}: %v", err)
+        return err
+    }
+    return nil
+}

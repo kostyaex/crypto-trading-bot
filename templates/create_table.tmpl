@@ -1,0 +1,10 @@
+-- internal/repositories/migrations/01_create_{{ .ModelNameLower }}_table.sql
+
+CREATE TABLE IF NOT EXISTS {{ .ModelNameLower }}s (
+    id SERIAL PRIMARY KEY,
+    {{ range .Fields }}
+    {{ .FieldName | ToSnakeCase }} {{ .SQLType }} NOT NULL,
+    {{ end }}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,14 @@
+// {{ .PackageName }}/models/{{ .ModelName }}.go
+
+package models
+
+import "time"
+
+// {{ .ModelName }} представляет модель {{ .ModelName }}.
+type {{ .ModelName }} struct {
+    ID        int     `json:"id"`
+    {{ range .Fields }}
+    {{ .FieldName }} {{ .FieldType }} `json:"{{ .JSONTag }}"`{{ end }}
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
