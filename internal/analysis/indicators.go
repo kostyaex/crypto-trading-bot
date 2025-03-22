@@ -2,14 +2,14 @@ package analysis
 
 import (
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/repositories"
+	"crypto-trading-bot/internal/services"
 	"errors"
 	"math"
 )
 
 // CalculateRSI вычисляет индикатор RSI для заданного символа
-func CalculateRSI(repo *repositories.Repository, symbol string, period int) (float64, error) {
-	marketData, err := repo.GetMarketData(symbol, period)
+func CalculateRSI(marketDataService services.MarketDataService, symbol string, period int) (float64, error) {
+	marketData, err := marketDataService.GetMarketData(symbol, period)
 	if err != nil {
 		return 0, err
 	}
@@ -44,8 +44,8 @@ func CalculateRSI(repo *repositories.Repository, symbol string, period int) (flo
 }
 
 // CalculateMACD вычисляет индикатор MACD для заданного символа
-func CalculateMACD(repo *repositories.Repository, symbol string, fastPeriod, slowPeriod, signalPeriod int) (float64, float64, error) {
-	marketData, err := repo.GetMarketData(symbol, slowPeriod+signalPeriod-1)
+func CalculateMACD(marketDataService services.MarketDataService, symbol string, fastPeriod, slowPeriod, signalPeriod int) (float64, float64, error) {
+	marketData, err := marketDataService.GetMarketData(symbol, slowPeriod+signalPeriod-1)
 	if err != nil {
 		return 0, 0, err
 	}

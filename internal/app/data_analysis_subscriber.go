@@ -3,23 +3,25 @@ package app
 import (
 	"crypto-trading-bot/internal/analysis"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/repositories"
+	"crypto-trading-bot/internal/services"
 	"crypto-trading-bot/internal/utils"
 )
 
 // DataAnalysisSubscriber представляет подписчика, который анализирует данные
 type DataAnalysisSubscriber struct {
-	repo           *repositories.Repository
-	logger         *utils.Logger
-	eventPublisher *EventPublisher
+	logger            *utils.Logger
+	eventPublisher    *EventPublisher
+	marketDataService services.MarketDataService
+	indicatorService  services.IndicatorService
 }
 
 // NewDataAnalysisSubscriber создает нового подписчика для анализа данных
-func NewDataAnalysisSubscriber(repo *repositories.Repository, logger *utils.Logger, eventPublisher *EventPublisher) *DataAnalysisSubscriber {
+func NewDataAnalysisSubscriber(logger *utils.Logger, eventPublisher *EventPublisher, marketDataService services.MarketDataService, indicatorService services.IndicatorService) *DataAnalysisSubscriber {
 	return &DataAnalysisSubscriber{
-		repo:           repo,
-		logger:         logger,
-		eventPublisher: eventPublisher,
+		logger:            logger,
+		eventPublisher:    eventPublisher,
+		marketDataService: marketDataService,
+		indicatorService:  indicatorService,
 	}
 }
 
@@ -39,7 +41,7 @@ func (das *DataAnalysisSubscriber) Handle(event Event) {
 
 	for _, md := range marketData {
 		// Пример анализа данных
-		rsi, err := analysis.CalculateRSI(das.repo, md.Symbol, 14)
+		rsi, err := analysis.CalculateRSI(das.marketDataService, md.Symbol, 14)
 		if err != nil {
 			das.logger.Errorf("Failed to calculate RSI for symbol %s: %v", md.Symbol, err)
 			continue
@@ -55,7 +57,7 @@ func (das *DataAnalysisSubscriber) Handle(event Event) {
 		//das.logger.Infof("MACD for %s: %.2f, Signal: %.2f", md.Symbol, macd, signal)
 
 		// Сохранение результатов анализа в базу данных
-		if err := das.repo.SaveIndicator(md.Symbol, "RSI", rsi, md.Timestamp); err != nil {
+		if err := das.indicatorService.SaveIndicator(md.Symbol, "RSI", rsi, md.Timestamp); err != nil {
 			das.logger.Errorf("Failed to save RSI for symbol %s: %v", md.Symbol, err)
 		}
 

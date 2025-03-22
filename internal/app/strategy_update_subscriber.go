@@ -1,22 +1,24 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/repositories"
+	"crypto-trading-bot/internal/services"
 	"crypto-trading-bot/internal/strategy"
 	"crypto-trading-bot/internal/utils"
 )
 
 // StrategyUpdateSubscriber представляет подписчика, который обновляет состояния стратегий
 type StrategyUpdateSubscriber struct {
-	repo   *repositories.Repository
-	logger *utils.Logger
+	logger              *utils.Logger
+	strategyService     services.StrategyService
+	behaviorTreeService services.BehaviorTreeService
 }
 
 // NewStrategyUpdateSubscriber создает нового подписчика для обновления состояний стратегий
-func NewStrategyUpdateSubscriber(repo *repositories.Repository, logger *utils.Logger) *StrategyUpdateSubscriber {
+func NewStrategyUpdateSubscriber(logger *utils.Logger, strategyService services.StrategyService, behaviorTreeService services.BehaviorTreeService) *StrategyUpdateSubscriber {
 	return &StrategyUpdateSubscriber{
-		repo:   repo,
-		logger: logger,
+		logger:              logger,
+		strategyService:     strategyService,
+		behaviorTreeService: behaviorTreeService,
 	}
 }
 
@@ -35,7 +37,7 @@ func (sus *StrategyUpdateSubscriber) Handle(event Event) {
 	sus.logger.Infof("Updating strategy states for symbol: %s, timestamp: %v", analysisEvent.Symbol, analysisEvent.Timestamp)
 
 	// Получение всех активных стратегий
-	strategies, err := sus.repo.Strategy.GetActiveStrategies()
+	strategies, err := sus.strategyService.GetActiveStrategies()
 	if err != nil {
 		sus.logger.Errorf("Failed to get active strategies: %v", err)
 		return
@@ -45,7 +47,7 @@ func (sus *StrategyUpdateSubscriber) Handle(event Event) {
 		sus.logger.Infof("Updating strategy: %s", strat.Name)
 
 		// Получение текущего состояния поведенческого дерева для стратегии
-		btState, err := sus.repo.GetBehaviorTreeState(strat.ID)
+		btState, err := sus.behaviorTreeService.GetBehaviorTreeState(strat.ID)
 		if err != nil {
 			sus.logger.Errorf("Failed to get behavior tree state for strategy %s: %v", strat.Name, err)
 			continue
@@ -66,7 +68,7 @@ func (sus *StrategyUpdateSubscriber) Handle(event Event) {
 		}
 
 		// Сохранение обновленного состояния поведенческого дерева в базу данных
-		if err := sus.repo.SaveBehaviorTreeState(strat.ID, updatedState); err != nil {
+		if err := sus.behaviorTreeService.SaveBehaviorTreeState(strat.ID, updatedState); err != nil {
 			sus.logger.Errorf("Failed to save behavior tree state for strategy %s: %v", strat.Name, err)
 			continue
 		}

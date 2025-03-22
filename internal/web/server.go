@@ -22,10 +22,11 @@ type Server struct {
 	repo   *repositories.Repository
 	logger *utils.Logger
 	//trader *trading.Trader
-	server *http.Server
+	server          *http.Server
+	strategyService services.StrategyService
 }
 
-func NewServer(port string, repo *repositories.Repository, logger *utils.Logger) *Server {
+func NewServer(port string, repo *repositories.Repository, logger *utils.Logger, strategyService services.StrategyService) *Server {
 	router := mux.NewRouter()
 
 	s := &Server{
@@ -33,14 +34,14 @@ func NewServer(port string, repo *repositories.Repository, logger *utils.Logger)
 		router: router,
 		repo:   repo,
 		//trader: trader,
-		logger: logger,
+		logger:          logger,
+		strategyService: strategyService,
 	}
 
 	// Настройка маршрутов для веб-интерфейса
 	fs := http.FileServer(http.Dir("./web/ui/static"))
 	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
-	strategyService := services.NewStrategyService(repo)
 	strategyHandler := handlers.NewStrategyHandler(strategyService, logger)
 
 	// // Настройка маршрутов для API

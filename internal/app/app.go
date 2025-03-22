@@ -5,6 +5,7 @@ import (
 	"crypto-trading-bot/internal/config"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/repositories"
+	"crypto-trading-bot/internal/services"
 	"crypto-trading-bot/internal/utils"
 	"crypto-trading-bot/internal/web"
 	"log"
@@ -47,17 +48,23 @@ func NewApp() *App {
 	}
 
 	repo := repositories.NewRepository(db, logger)
+
+	strategyService := services.NewStrategyService(repo)
+	behaviorTreeService := services.NewBehaviorTree(repo)
+	indicatorService := services.NewIndicatorService(repo)
+	marketDataService := services.NewMarketDataService(repo)
+
 	//trader := trading.NewTrader(repo, exchanges, logger)
-	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger)
-	scheduler := NewScheduler(repo, exchanges, logger)
+	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, strategyService)
+	scheduler := NewScheduler(exchanges, logger)
 	eventPublisher := NewEventPublisher()
 
 	// Создание подписчика для анализа данных
-	dataAnalysisSubscriber := NewDataAnalysisSubscriber(repo, logger, eventPublisher)
+	dataAnalysisSubscriber := NewDataAnalysisSubscriber(logger, eventPublisher, marketDataService, indicatorService)
 	eventPublisher.Subscribe(dataAnalysisSubscriber)
 
 	// Создание подписчика для обновления состояния стратегий
-	strategyUpdateSubscriber := NewStrategyUpdateSubscriber(repo, logger)
+	strategyUpdateSubscriber := NewStrategyUpdateSubscriber(logger, strategyService, behaviorTreeService)
 	eventPublisher.Subscribe(strategyUpdateSubscriber)
 
 	return &App{

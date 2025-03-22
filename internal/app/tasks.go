@@ -34,7 +34,7 @@ func (t *DataFetchingTask) Run() {
 			continue
 		}
 		for _, data := range marketData {
-			if err := t.repo.SaveMarketData(data); err != nil {
+			if err := t.repo.MarketData.SaveMarketData(data); err != nil {
 				t.logger.Errorf("Failed to save market data for exchange %s: %v", ex.GetName(), err)
 			} else {
 				t.logger.Infof("Market data saved for exchange %s: %v", ex.GetName(), data)
