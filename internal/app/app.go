@@ -52,10 +52,11 @@ func NewApp() *App {
 	strategyService := services.NewStrategyService(repo)
 	behaviorTreeService := services.NewBehaviorTree(repo)
 	indicatorService := services.NewIndicatorService(repo)
-	marketDataService := services.NewMarketDataService(repo)
+	marketDataService := services.NewMarketDataService(repo, logger)
+	excahngeService := services.NewEchangeService(repo, logger, exchanges)
 
 	//trader := trading.NewTrader(repo, exchanges, logger)
-	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, strategyService)
+	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, excahngeService, strategyService, marketDataService)
 	scheduler := NewScheduler(exchanges, logger)
 	eventPublisher := NewEventPublisher()
 
@@ -95,12 +96,12 @@ func (a *App) Run() error {
 	a.scheduler.Start()
 	defer a.scheduler.Stop()
 
-	// Добавление задачи для загрузки данных с бирж каждые 5 минут
-	task := NewDataFetchingTask(a.repo, a.exchanges, a.logger, a.eventPublisher)
-	_, err := a.scheduler.AddJob("@every 5m", task)
-	if err != nil {
-		return err
-	}
+	// // Добавление задачи для загрузки данных с бирж каждые 5 минут
+	// task := NewDataFetchingTask(a.repo, a.exchanges, a.logger, a.eventPublisher)
+	// _, err := a.scheduler.AddJob("@every 5m", task)
+	// if err != nil {
+	// 	return err
+	// }
 
 	if err := a.webServer.Start(ctx); err != nil {
 		return err

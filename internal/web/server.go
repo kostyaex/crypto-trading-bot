@@ -22,11 +22,13 @@ type Server struct {
 	repo   *repositories.Repository
 	logger *utils.Logger
 	//trader *trading.Trader
-	server          *http.Server
-	strategyService services.StrategyService
+	server            *http.Server
+	strategyService   services.StrategyService
+	marketDataService services.MarketDataService
+	exchangeService   services.ExchangeService
 }
 
-func NewServer(port string, repo *repositories.Repository, logger *utils.Logger, strategyService services.StrategyService) *Server {
+func NewServer(port string, repo *repositories.Repository, logger *utils.Logger, exchangeService services.ExchangeService, strategyService services.StrategyService, marketDataService services.MarketDataService) *Server {
 	router := mux.NewRouter()
 
 	s := &Server{
@@ -34,8 +36,10 @@ func NewServer(port string, repo *repositories.Repository, logger *utils.Logger,
 		router: router,
 		repo:   repo,
 		//trader: trader,
-		logger:          logger,
-		strategyService: strategyService,
+		logger:            logger,
+		strategyService:   strategyService,
+		marketDataService: marketDataService,
+		exchangeService:   exchangeService,
 	}
 
 	// Настройка маршрутов для веб-интерфейса
@@ -43,6 +47,7 @@ func NewServer(port string, repo *repositories.Repository, logger *utils.Logger,
 	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
 	strategyHandler := handlers.NewStrategyHandler(strategyService, logger)
+	marketDataHandler := handlers.NewMarketDataHandler(marketDataService, exchangeService, logger)
 
 	// // Настройка маршрутов для API
 
@@ -54,6 +59,8 @@ func NewServer(port string, repo *repositories.Repository, logger *utils.Logger,
 	s.router.HandleFunc("/strategies", strategyHandler.PostCreateStrategy).Methods("POST")
 	s.router.HandleFunc("/strategies/{id}", strategyHandler.PostUpdateStrategy).Methods("POST")
 	s.router.HandleFunc("/strategies/{id}/delete", strategyHandler.PostDeleteStrategy).Methods("POST")
+
+	s.router.HandleFunc("/marketdata", marketDataHandler.GetMarketData).Methods("GET")
 
 	return s
 }

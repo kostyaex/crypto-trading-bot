@@ -5,14 +5,13 @@ import (
 	"crypto-trading-bot/internal/utils"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"strconv"
 	"time"
 )
 
 type Huobi struct {
 	exchangeBase
+	baseURL   string
 	apiKey    string
 	apiSecret string
 }
@@ -20,60 +19,51 @@ type Huobi struct {
 func NewHuobi(apiKey, apiSecret string, logger *utils.Logger) *Huobi {
 	return &Huobi{
 		exchangeBase: exchangeBase{name: "Huobi", logger: logger},
+		baseURL:      "https://api.huobi.pro",
 		apiKey:       apiKey,
 		apiSecret:    apiSecret,
 	}
 }
 
+// GetMarketData получает рыночные данные с Huobi.
 func (h *Huobi) GetMarketData() ([]*models.MarketData, error) {
-	url := "https://api.huobi.pro/market/tickers"
+	url := fmt.Sprintf("%s/market/history/kline?symbol=btcusdt&period=1day", h.baseURL)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		h.logError(err, "Failed to fetch market data")
+		h.logger.Errorf("Failed to fetch market data: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		h.logError(err, "Failed to read response body")
-		return nil, err
-	}
-
-	var result struct {
-		Status string `json:"status"`
-		Data   []struct {
-			Symbol string `json:"symbol"`
-			Close  string `json:"close"`
+	var huobiResponse struct {
+		Data []struct {
+			ID     int     `json:"id"`
+			Open   float64 `json:"open"`
+			Close  float64 `json:"close"`
+			Amount float64 `json:"amount"`
 		} `json:"data"`
 	}
 
-	if err := json.Unmarshal(body, &result); err != nil {
-		h.logError(err, "Failed to unmarshal response")
+	if err := json.NewDecoder(resp.Body).Decode(&huobiResponse); err != nil {
+		h.logger.Errorf("Failed to decode market data: %v", err)
 		return nil, err
 	}
 
-	if result.Status != "ok" {
-		h.logError(fmt.Errorf("invalid status: %s", result.Status), "Failed to fetch market data")
-		return nil, fmt.Errorf("invalid status: %s", result.Status)
-	}
-
 	var marketData []*models.MarketData
-	for _, item := range result.Data {
-		price, err := strconv.ParseFloat(item.Close, 64)
-		if err != nil {
-			h.logError(err, "Failed to parse price for symbol %s", item.Symbol)
-			continue
-		}
+	for _, kline := range huobiResponse.Data {
+		timestamp := time.Unix(int64(kline.ID), 0)
 
 		marketData = append(marketData, &models.MarketData{
-			Symbol:    item.Symbol,
-			Price:     price,
-			Timestamp: time.Now(),
+			Exchange:   "huobi",
+			Symbol:     "BTCUSDT",
+			OpenPrice:  kline.Open,
+			ClosePrice: kline.Close,
+			Volume:     kline.Amount,
+			TimeFrame:  "1d", // Пример таймфрейма
+			Timestamp:  timestamp,
 		})
 	}
 
-	h.logInfo("Fetched market data: %v", marketData)
 	return marketData, nil
 }

@@ -22,7 +22,7 @@ func CalculateRSI(marketDataService services.MarketDataService, symbol string, p
 	losses := make([]float64, period-1)
 
 	for i := 1; i < period; i++ {
-		change := marketData[i].Price - marketData[i-1].Price
+		change := marketData[i].ClosePrice - marketData[i-1].ClosePrice
 		if change > 0 {
 			gains[i-1] = change
 		} else {
@@ -73,9 +73,9 @@ func CalculateMACD(marketDataService services.MarketDataService, symbol string, 
 	macdMarketData := make([]*models.MarketData, len(macdValues))
 	for i, macdValue := range macdValues {
 		macdMarketData[i] = &models.MarketData{
-			Symbol:    symbol,
-			Price:     macdValue,
-			Timestamp: marketData[i+fastPeriod-1].Timestamp,
+			Symbol:     symbol,
+			ClosePrice: macdValue,
+			Timestamp:  marketData[i+fastPeriod-1].Timestamp,
 		}
 	}
 
@@ -105,12 +105,12 @@ func calculateEMA(marketData []*models.MarketData, period int) ([]float64, error
 
 	sum := 0.0
 	for i := 0; i < period; i++ {
-		sum += marketData[i].Price
+		sum += marketData[i].ClosePrice
 	}
 	ema[period-1] = sum / float64(period)
 
 	for i := period; i < len(marketData); i++ {
-		ema[i] = (marketData[i].Price-ema[i-1])*multiplier + ema[i-1]
+		ema[i] = (marketData[i].ClosePrice-ema[i-1])*multiplier + ema[i-1]
 	}
 
 	return ema, nil
@@ -127,12 +127,12 @@ func calculateEMAMarketData(marketData []*models.MarketData, period int) ([]floa
 
 	sum := 0.0
 	for i := 0; i < period; i++ {
-		sum += marketData[i].Price
+		sum += marketData[i].ClosePrice
 	}
 	ema[period-1] = sum / float64(period)
 
 	for i := period; i < len(marketData); i++ {
-		ema[i] = (marketData[i].Price-ema[i-1])*multiplier + ema[i-1]
+		ema[i] = (marketData[i].ClosePrice-ema[i-1])*multiplier + ema[i-1]
 	}
 
 	return ema, nil

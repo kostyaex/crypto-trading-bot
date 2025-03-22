@@ -7,7 +7,7 @@ import (
 )
 
 type MarketDataRepository interface {
-	SaveMarketData(data *models.MarketData) error
+	SaveMarketData(data []*models.MarketData) error
 	GetMarketData(symbol string, limit int) ([]*models.MarketData, error)
 }
 
@@ -20,21 +20,37 @@ func NewMarketDataRepository(db *DB, logger *utils.Logger) MarketDataRepository 
 	return &marketDataRepository{db: db, logger: logger}
 }
 
-func (r *marketDataRepository) SaveMarketData(data *models.MarketData) error {
-	query := `
-        INSERT INTO market_data (symbol, price, timestamp)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (symbol, timestamp) DO UPDATE
-        SET price = EXCLUDED.price;
-    `
-
-	_, err := r.db.Exec(query, data.Symbol, data.Price, data.Timestamp)
+// SaveMarketData сохраняет рыночные данные в базу данных.
+func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
+	tx, err := r.db.Begin()
 	if err != nil {
-		r.logger.Errorf("Failed to save market data: %v", err)
+		r.logger.Errorf("Failed to begin transaction: %v", err)
 		return err
 	}
 
-	r.logger.Infof("Market data saved: %v", data)
+	stmt, err := tx.Prepare("INSERT INTO market_data (exchange, symbol, open_price, close_price, volume, time_frame, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+	if err != nil {
+		r.logger.Errorf("Failed to prepare statement: %v", err)
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+
+	for _, d := range data {
+		_, err := stmt.Exec(d.Exchange, d.Symbol, d.OpenPrice, d.ClosePrice, d.Volume, d.TimeFrame, d.Timestamp)
+		if err != nil {
+			r.logger.Errorf("Failed to insert market data: %v", err)
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		r.logger.Errorf("Failed to commit transaction: %v", err)
+		tx.Rollback()
+		return err
+	}
+
 	return nil
 }
 

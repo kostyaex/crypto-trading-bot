@@ -3,15 +3,19 @@
 -- Таблица для хранения рыночных данных
 CREATE TABLE IF NOT EXISTS market_data (
     id SERIAL PRIMARY KEY,
+    exchange TEXT NOT NULL,
     symbol TEXT NOT NULL,
-    price NUMERIC(20, 8) NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(symbol, timestamp)
+    open_price NUMERIC(20, 8) NOT NULL,
+    close_price NUMERIC(20, 8) NOT NULL,
+    volume NUMERIC(20,3) NOT NULL,
+    time_frame TEXT NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Таблица для хранения информации о биржах
-CREATE TABLE IF NOT EXISTS exchanges (
+CREATE TABLE IF NOT EXISTS accounts (
     id SERIAL PRIMARY KEY,
+    exchange TEXT NOT NULL,
     name TEXT NOT NULL UNIQUE,
     api_key TEXT NOT NULL,
     api_secret TEXT NOT NULL
