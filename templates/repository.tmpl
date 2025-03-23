@@ -13,32 +13,27 @@ import (
 type {{ .ModelName }}Repository interface {
     Get{{ .ModelName }}(id int) (*models.{{ .ModelName }}, error)
     Save{{ .ModelName }}({{ .ModelNameLower }} *models.{{ .ModelName }}) error
+    Get{{ .ModelName }}List() ([]*models.{{ .ModelName }}, error)
 }
 
 // {{ .ModelNameLower }}Repository реализует {{ .ModelName }}Repository.
 type {{ .ModelNameLower }}Repository struct {
-    db     *sql.DB
+    db     *DB
     logger *utils.Logger
 }
 
 // New{{ .ModelName }}Repository создает новый экземпляр {{ .ModelName }}Repository.
-func New{{ .ModelName }}Repository(db *sql.DB, logger *utils.Logger) {{ .ModelName }}Repository {
+func New{{ .ModelName }}Repository(db *DB, logger *utils.Logger) {{ .ModelName }}Repository {
     return &{{ .ModelNameLower }}Repository{db: db, logger: logger}
 }
 
 // Get{{ .ModelName }} находит {{ .ModelNameLower }} по ID.
 func (r *{{ .ModelNameLower }}Repository) Get{{ .ModelName }}(id int) (*models.{{ .ModelName }}, error) {
     var {{ .ModelNameLower }} models.{{ .ModelName }}
-    query := "SELECT id, {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }}{{ end }}, created_at, updated_at FROM {{ .ModelNameLower }}s WHERE id = ?"
-    err := r.db.QueryRow(query, id).Scan(
-        &{{ .ModelNameLower }}.ID,
-        {{ range .Fields }}
-        &{{ .ModelNameLower }}.{{ .FieldName }},
-        {{ end }}
-        &{{ .ModelNameLower }}.CreatedAt,
-        &{{ .ModelNameLower }}.UpdatedAt,
-    )
-    if err != nil {
+    query := "SELECT id, {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName | ToSnakeCase }}{{ end }}, created_at, updated_at FROM {{ .ModelName | ToSnakeCase }}s WHERE id = ?"
+
+    err := r.db.Get(&{{ .ModelNameLower }}, query, id)
+	if err != nil {
         if err == sql.ErrNoRows {
             r.logger.Errorf("{{ .ModelNameLower }} with ID %d not found", id)
             return nil, fmt.Errorf("{{ .ModelNameLower }} not found")
@@ -51,11 +46,11 @@ func (r *{{ .ModelNameLower }}Repository) Get{{ .ModelName }}(id int) (*models.{
 
 // Save{{ .ModelName }} сохраняет {{ .ModelNameLower }} в базу данных.
 func (r *{{ .ModelNameLower }}Repository) Save{{ .ModelName }}({{ .ModelNameLower }} *models.{{ .ModelName }}) error {
-    query := "INSERT INTO {{ .ModelNameLower }}s ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }}{{ end }}, created_at, updated_at) VALUES ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}?{{ end }}, ?, ?) ON DUPLICATE KEY UPDATE {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }} = VALUES({{ $field.FieldName }}){{ end }}, updated_at = VALUES(updated_at)"
+    query := "INSERT INTO {{ .ModelName | ToSnakeCase }}s ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName | ToSnakeCase }}{{ end }}, created_at, updated_at) VALUES ({{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}?{{ end }}, ?, ?) ON DUPLICATE KEY UPDATE {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName }} = VALUES({{ $field.FieldName }}){{ end }}, updated_at = VALUES(updated_at)"
     _, err := r.db.Exec(query,
-        {{ range .Fields }}
-        {{ .ModelNameLower }}.{{ .FieldName }},
-        {{ end }}
+        {{ range .Fields -}}
+        {{ $.ModelNameLower }}.{{ .FieldName }},
+        {{ end -}}
         {{ .ModelNameLower }}.CreatedAt,
         {{ .ModelNameLower }}.UpdatedAt,
     )
@@ -64,4 +59,18 @@ func (r *{{ .ModelNameLower }}Repository) Save{{ .ModelName }}({{ .ModelNameLowe
         return err
     }
     return nil
+}
+
+// Get{{ .ModelName }}List выбирает список {{ .ModelNameLower }} из базы данных.
+func (r *{{ .ModelNameLower }}Repository) Get{{ .ModelName }}List() ([]*models.{{ .ModelName }}, error) {
+    var {{ .ModelNameLower }} []*models.{{ .ModelName }}
+    query := "SELECT id, {{ range $index, $field := .Fields }}{{ if $index }}, {{ end }}{{ $field.FieldName | ToSnakeCase }}{{ end }}, created_at, updated_at FROM {{ .ModelName | ToSnakeCase }}s"
+
+	err := r.db.Select(&{{ .ModelNameLower }}, query)
+	if err != nil {
+		r.logger.Errorf("Failed to get data from {{ .ModelName | ToSnakeCase }}s: %v", err)
+		return nil, err
+	}
+
+	return {{ .ModelNameLower }}, nil
 }

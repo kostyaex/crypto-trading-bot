@@ -1,6 +1,6 @@
--- internal/repositories/migrations/01_create_{{ .ModelNameLower }}_table.sql
+-- migrations/0000001_create_{{ .ModelName | ToSnakeCase }}_table.sql
 
-CREATE TABLE IF NOT EXISTS {{ .ModelNameLower }}s (
+CREATE TABLE IF NOT EXISTS {{ .ModelName | ToSnakeCase }}s (
     id SERIAL PRIMARY KEY,
     {{ range .Fields }}
     {{ .FieldName | ToSnakeCase }} {{ .SQLType }} NOT NULL,

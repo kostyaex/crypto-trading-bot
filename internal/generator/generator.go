@@ -48,7 +48,9 @@ func GenerateModel(model Model) error {
 
 // GenerateRepository генерирует код репозитория.
 func GenerateRepository(model Model) error {
-	tmpl, err := template.ParseFiles("templates/repository.tmpl")
+	tmpl, err := template.New("repository.tmpl").Funcs(template.FuncMap{
+		"ToSnakeCase": toSnakeCase,
+	}).ParseFiles("templates/repository.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to parse repository template: %v", err)
 	}
@@ -88,9 +90,10 @@ func GenerateService(model Model) error {
 
 // GenerateCreateTableScript генерирует скрипт создания таблицы.
 func GenerateCreateTableScript(model Model) error {
-	tmpl, err := template.New("create_table").Funcs(template.FuncMap{
+	tmpl, err := template.New("create_table.tmpl").Funcs(template.FuncMap{
 		"ToSnakeCase": toSnakeCase,
 	}).ParseFiles("templates/create_table.tmpl")
+	//tmpl, err := template.ParseFiles("templates/create_table.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to parse create table template: %v", err)
 	}
@@ -100,7 +103,7 @@ func GenerateCreateTableScript(model Model) error {
 		return fmt.Errorf("failed to execute create table template: %v", err)
 	}
 
-	createFilePath := filepath.Join("internal", "repositories", "migrations", fmt.Sprintf("01_create_%s_table.sql", model.ModelNameLower))
+	createFilePath := filepath.Join("migrations", fmt.Sprintf("0000001_create_%s_table.sql", model.ModelNameLower))
 	if err := os.WriteFile(createFilePath, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write create table script: %v", err)
 	}
@@ -110,7 +113,9 @@ func GenerateCreateTableScript(model Model) error {
 
 // GenerateDropTableScript генерирует скрипт удаления таблицы.
 func GenerateDropTableScript(model Model) error {
-	tmpl, err := template.ParseFiles("templates/drop_table.tmpl")
+	tmpl, err := template.New("drop_table.tmpl").Funcs(template.FuncMap{
+		"ToSnakeCase": toSnakeCase,
+	}).ParseFiles("templates/drop_table.tmpl")
 	if err != nil {
 		return fmt.Errorf("failed to parse drop table template: %v", err)
 	}
@@ -120,7 +125,7 @@ func GenerateDropTableScript(model Model) error {
 		return fmt.Errorf("failed to execute drop table template: %v", err)
 	}
 
-	dropFilePath := filepath.Join("internal", "repositories", "migrations", fmt.Sprintf("99_drop_%s_table.sql", model.ModelNameLower))
+	dropFilePath := filepath.Join("migrations", fmt.Sprintf("0000001_drop_%s_table.sql", model.ModelNameLower))
 	if err := os.WriteFile(dropFilePath, buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write drop table script: %v", err)
 	}
