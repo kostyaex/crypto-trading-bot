@@ -12,6 +12,7 @@ import (
 type {{ .ModelName }}Service interface {
     Get{{ .ModelName }}(id int) (*models.{{ .ModelName }}, error)
     Save{{ .ModelName }}({{ .ModelNameLower }} *models.{{ .ModelName }}) error
+    Get{{ .ModelName }}List() ([]*models.{{ .ModelName }}, error)
 }
 
 // {{ .ModelNameLower }}Service реализует {{ .ModelName }}Service.
@@ -23,8 +24,8 @@ type {{ .ModelNameLower }}Service struct {
 // New{{ .ModelName }}Service создает новый экземпляр {{ .ModelName }}Service.
 func New{{ .ModelName }}Service({{ .ModelNameLower }}Repo repositories.{{ .ModelName }}Repository, logger *utils.Logger) {{ .ModelName }}Service {
     return &{{ .ModelNameLower }}Service{
-    {{ .ModelNameLower }}Repo: {{ .ModelNameLower }},
-    Repo, logger: logger
+        {{ .ModelNameLower }}Repo: {{ .ModelNameLower }}Repo,
+        logger: logger,
     }
 }
 
@@ -45,4 +46,14 @@ func (s *{{ .ModelNameLower }}Service) Save{{ .ModelName }}({{ .ModelNameLower }
         return err
     }
     return nil
+}
+
+// Get{{ .ModelName }} получает список {{ .ModelNameLower }}.
+func (s *{{ .ModelNameLower }}Service) Get{{ .ModelName }}List() ([]*models.{{ .ModelName }}, error) {
+    {{ .ModelNameLower }}, err := s.{{ .ModelNameLower }}Repo.Get{{ .ModelName }}List()
+    if err != nil {
+        s.logger.Errorf("Failed to get {{ .ModelNameLower }} list: %v", err)
+        return nil, err
+    }
+    return {{ .ModelNameLower }}, nil
 }

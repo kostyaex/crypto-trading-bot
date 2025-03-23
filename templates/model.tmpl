@@ -6,9 +6,10 @@ import "time"
 
 // {{ .ModelName }} представляет модель {{ .ModelName }}.
 type {{ .ModelName }} struct {
-    ID        int     `json:"id"`
-    {{ range .Fields }}
-    {{ .FieldName }} {{ .FieldType }} `json:"{{ .JSONTag }}"`{{ end }}
-    CreatedAt time.Time `json:"created_at"`
-    UpdatedAt time.Time `json:"updated_at"`
+    ID        int     `db:"id"`
+    {{ range .Fields -}}
+    {{ .FieldName }} {{ .FieldType }} `db:"{{ .JSONTag }}"`
+    {{ end -}}
+    CreatedAt time.Time `db:"created_at"`
+    UpdatedAt time.Time `db:"updated_at"`
 }
