@@ -30,7 +30,7 @@ func NewMarketDataStatusRepository(db *DB, logger *utils.Logger) MarketDataStatu
 // GetMarketDataStatus находит marketdatastatus по ID.
 func (r *marketdatastatusRepository) GetMarketDataStatus(id int) (*models.MarketDataStatus, error) {
 	var marketdatastatus models.MarketDataStatus
-	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss WHERE id = ?"
+	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss WHERE id = $1"
 
 	err := r.db.Get(&marketdatastatus, query, id)
 	if err != nil {
@@ -46,7 +46,7 @@ func (r *marketdatastatusRepository) GetMarketDataStatus(id int) (*models.Market
 
 // SaveMarketDataStatus сохраняет marketdatastatus в базу данных.
 func (r *marketdatastatusRepository) SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error {
-	query := "INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, actual_time, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE Exchange = VALUES(Exchange), Symbol = VALUES(Symbol), TimeFrame = VALUES(TimeFrame), Active = VALUES(Active), ActualTime = VALUES(ActualTime), Status = VALUES(Status), updated_at = VALUES(updated_at)"
+	query := "INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, actual_time, status) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (exchange,symbol,time_frame) DO UPDATE SET active = $4, actual_time = $5, status = $6;"
 	_, err := r.db.Exec(query,
 		marketdatastatus.Exchange,
 		marketdatastatus.Symbol,
@@ -65,7 +65,7 @@ func (r *marketdatastatusRepository) SaveMarketDataStatus(marketdatastatus *mode
 // GetMarketDataStatusList выбирает список marketdatastatus из базы данных.
 func (r *marketdatastatusRepository) GetMarketDataStatusList() ([]*models.MarketDataStatus, error) {
 	var marketdatastatus []*models.MarketDataStatus
-	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status, created_at, updated_at FROM market_data_statuss"
+	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss"
 
 	err := r.db.Select(&marketdatastatus, query)
 	if err != nil {

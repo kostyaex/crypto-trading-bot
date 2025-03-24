@@ -17,21 +17,21 @@ type MarketDataStatusService interface {
 
 // marketdatastatusService реализует MarketDataStatusService.
 type marketdatastatusService struct {
-	marketdatastatusRepo repositories.MarketDataStatusRepository
-	logger               *utils.Logger
+	repo   *repositories.Repository
+	logger *utils.Logger
 }
 
 // NewMarketDataStatusService создает новый экземпляр MarketDataStatusService.
-func NewMarketDataStatusService(marketdatastatusRepo repositories.MarketDataStatusRepository, logger *utils.Logger) MarketDataStatusService {
+func NewMarketDataStatusService(repo *repositories.Repository, logger *utils.Logger) MarketDataStatusService {
 	return &marketdatastatusService{
-		marketdatastatusRepo: marketdatastatusRepo,
-		logger:               logger,
+		repo:   repo,
+		logger: logger,
 	}
 }
 
 // GetMarketDataStatus получает информацию о marketdatastatus по ID.
 func (s *marketdatastatusService) GetMarketDataStatus(id int) (*models.MarketDataStatus, error) {
-	marketdatastatus, err := s.marketdatastatusRepo.GetMarketDataStatus(id)
+	marketdatastatus, err := s.repo.MarketDataStatus.GetMarketDataStatus(id)
 	if err != nil {
 		s.logger.Errorf("Failed to get marketdatastatus: %v", err)
 		return nil, err
@@ -41,7 +41,7 @@ func (s *marketdatastatusService) GetMarketDataStatus(id int) (*models.MarketDat
 
 // SaveMarketDataStatus сохраняет информацию о marketdatastatus.
 func (s *marketdatastatusService) SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error {
-	if err := s.marketdatastatusRepo.SaveMarketDataStatus(marketdatastatus); err != nil {
+	if err := s.repo.MarketDataStatus.SaveMarketDataStatus(marketdatastatus); err != nil {
 		s.logger.Errorf("Failed to save marketdatastatus: %v", err)
 		return err
 	}
@@ -50,7 +50,7 @@ func (s *marketdatastatusService) SaveMarketDataStatus(marketdatastatus *models.
 
 // GetMarketDataStatus получает список marketdatastatus.
 func (s *marketdatastatusService) GetMarketDataStatusList() ([]*models.MarketDataStatus, error) {
-	marketdatastatus, err := s.marketdatastatusRepo.GetMarketDataStatusList()
+	marketdatastatus, err := s.repo.MarketDataStatus.GetMarketDataStatusList()
 	if err != nil {
 		s.logger.Errorf("Failed to get marketdatastatus list: %v", err)
 		return nil, err

@@ -3,11 +3,12 @@ package exchange
 import (
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
+	"time"
 )
 
 type Exchange interface {
 	GetName() string
-	GetMarketData() ([]*models.MarketData, error)
+	GetMarketData(symbol, interval string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error)
 }
 
 type exchangeBase struct {

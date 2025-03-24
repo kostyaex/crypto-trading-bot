@@ -25,14 +25,17 @@ func NewHuobi(apiKey, apiSecret string, logger *utils.Logger) *Huobi {
 	}
 }
 
-// GetMarketData получает рыночные данные с Huobi.
-func (h *Huobi) GetMarketData() ([]*models.MarketData, error) {
-	url := fmt.Sprintf("%s/market/history/kline?symbol=btcusdt&period=1day", h.baseURL)
+// GetMarketData получает рыночные данные с Huobi по указанному символу, интервалу и начальной дате.
+func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
+	// Преобразование startTime в миллисекунды с начала эпохи Unix
+	startTimestamp := startTime.UnixNano() / int64(time.Millisecond)
+
+	url := fmt.Sprintf("%s/market/history/kline?symbol=%s&period=%s&from=%d", h.baseURL, symbol, interval, startTimestamp)
 
 	resp, err := http.Get(url)
 	if err != nil {
 		h.logger.Errorf("Failed to fetch market data: %v", err)
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
@@ -45,25 +48,24 @@ func (h *Huobi) GetMarketData() ([]*models.MarketData, error) {
 		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&huobiResponse); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&huobiResponse); err != nil {
 		h.logger.Errorf("Failed to decode market data: %v", err)
-		return nil, err
+		return
 	}
 
-	var marketData []*models.MarketData
 	for _, kline := range huobiResponse.Data {
 		timestamp := time.Unix(int64(kline.ID), 0)
+		lastTime = timestamp
 
 		marketData = append(marketData, &models.MarketData{
-			Exchange:   "huobi",
-			Symbol:     "BTCUSDT",
+			Symbol:     symbol,
 			OpenPrice:  kline.Open,
 			ClosePrice: kline.Close,
 			Volume:     kline.Amount,
-			TimeFrame:  "1d", // Пример таймфрейма
+			TimeFrame:  interval,
 			Timestamp:  timestamp,
 		})
 	}
 
-	return marketData, nil
+	return
 }

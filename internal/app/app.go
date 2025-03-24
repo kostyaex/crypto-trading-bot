@@ -53,7 +53,8 @@ func NewApp() *App {
 	behaviorTreeService := services.NewBehaviorTree(repo)
 	indicatorService := services.NewIndicatorService(repo)
 	marketDataService := services.NewMarketDataService(repo, logger)
-	excahngeService := services.NewEchangeService(repo, logger, exchanges)
+	marketDataStatusService := services.NewMarketDataStatusService(repo, logger)
+	excahngeService := services.NewEchangeService(repo, logger, exchanges, marketDataStatusService, marketDataService)
 
 	//trader := trading.NewTrader(repo, exchanges, logger)
 	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, excahngeService, strategyService, marketDataService)

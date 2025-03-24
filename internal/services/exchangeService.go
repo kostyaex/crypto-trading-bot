@@ -5,39 +5,93 @@ import (
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
+	"fmt"
+	"strings"
 )
 
 type ExchangeService interface {
-	FetchData() []*models.MarketData
+	LoadData() []*models.MarketData
 }
 
 type exchangeService struct {
-	repo      *repositories.Repository
-	exchanges []exchange.Exchange
-	logger    *utils.Logger
+	repo                    *repositories.Repository
+	exchanges               []exchange.Exchange
+	logger                  *utils.Logger
+	marketDataService       MarketDataService
+	marketDataStatusService MarketDataStatusService
 }
 
-func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange) ExchangeService {
-	return &exchangeService{repo: repo, logger: logger, exchanges: exchanges}
+func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, marketDataStatusService MarketDataStatusService, marketDataService MarketDataService) ExchangeService {
+	return &exchangeService{
+		repo:                    repo,
+		logger:                  logger,
+		exchanges:               exchanges,
+		marketDataStatusService: marketDataStatusService,
+		marketDataService:       marketDataService,
+	}
 }
 
-func (s *exchangeService) FetchData() []*models.MarketData {
+func (s *exchangeService) LoadData() []*models.MarketData {
 	s.logger.Infof("Starting data fetching")
 	var allMarketData []*models.MarketData
-	for _, ex := range s.exchanges {
-		s.logger.Infof("Fetching data from exchange: %s", ex.GetName())
-		marketData, err := ex.GetMarketData()
-		if err != nil {
-			s.logger.Errorf("Failed to fetch data from exchange %s: %v", ex.GetName(), err)
-			continue
-		}
-		if err := s.repo.MarketData.SaveMarketData(marketData); err != nil {
-			s.logger.Errorf("Failed to save market data for exchange %s: %v", ex.GetName(), err)
-		} else {
-			s.logger.Infof("Market data saved for exchange %s", ex.GetName())
-		}
-		allMarketData = append(allMarketData, marketData...)
+
+	// перебираем все биржи и таблицу состояния данных - для каждой активной выполняем загрузку
+	// В таблице состояний записаны данные для загрузки: пара (символ), интервал, дата актуальности с которой нужно продолжить загрузку
+
+	statusList, err := s.marketDataStatusService.GetMarketDataStatusList()
+	if err != nil {
+		s.logger.Errorf("Failed to GetMarketDataStatusList %v", err)
+		return nil
 	}
+
+	for _, ex := range s.exchanges {
+
+		for _, status := range statusList {
+
+			if !status.Active || status.Exchange != strings.ToLower(ex.GetName()) {
+				continue
+			}
+
+			s.logger.Infof("Fetching data from exchange: %s %s %v", ex.GetName(), status.Symbol, status.ActualTime)
+
+			marketData, lastTime, err := ex.GetMarketData(status.Symbol, status.TimeFrame, status.ActualTime)
+			if err != nil {
+				s.logger.Errorf("Failed to fetch data from exchange %s: %v", ex.GetName(), err)
+				continue
+			}
+
+			// if err := s.repo.MarketData.SaveMarketData(marketData); err != nil {
+			// 	s.logger.Errorf("Failed to save market data for exchange %s: %v", ex.GetName(), err)
+			// } else {
+			// 	s.logger.Infof("Market data saved for exchange %s", ex.GetName())
+			// }
+
+			allMarketData = append(allMarketData, marketData...)
+
+			// Сохранение рыночных данных в базу данных
+			if err := s.marketDataService.SaveMarketData(marketData); err != nil {
+				s.logger.Errorf("Failed to save market data: %v", err)
+
+				status.Status = fmt.Sprintf("ОШИБКА: %v", err)
+				if err := s.marketDataStatusService.SaveMarketDataStatus(status); err != nil {
+					s.logger.Errorf("Failed to save market data: %v", err)
+					return nil
+				}
+
+				return nil
+			}
+
+			// Сохранение статуса загрузки данных
+			status.ActualTime = lastTime
+			status.Status = "OK"
+			if err := s.marketDataStatusService.SaveMarketDataStatus(status); err != nil {
+				s.logger.Errorf("Failed to save market data: %v", err)
+				return nil
+			}
+		}
+
+	}
+
 	s.logger.Infof("Data fetching task completed")
 
 	return allMarketData

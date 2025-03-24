@@ -26,44 +26,46 @@ func NewBinance(apiKey, apiSecret string, logger *utils.Logger) *Binance {
 }
 
 // GetMarketData получает рыночные данные с Binance.
-func (b *Binance) GetMarketData() ([]*models.MarketData, error) {
-	url := fmt.Sprintf("%s/api/v3/ticker/24hr", b.baseURL)
+func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
+
+	//https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints#klinecandlestick-data
+
+	// Преобразование startTime в миллисекунды с начала эпохи Unix
+	startTimestamp := startTime.UnixNano() / int64(time.Millisecond)
+
+	url := fmt.Sprintf("%s/api/v3/klines?symbol=%s&interval=%s&startTime=%d", b.baseURL, symbol, interval, startTimestamp)
 
 	resp, err := http.Get(url)
 	if err != nil {
 		b.logger.Errorf("Failed to fetch market data: %v", err)
-		return nil, err
+		return
 	}
 	defer resp.Body.Close()
 
-	var tickers []struct {
-		Symbol     string `json:"symbol"`
-		OpenPrice  string `json:"openPrice"`
-		ClosePrice string `json:"lastPrice"`
-		Volume     string `json:"volume"`
-	}
+	var klines [][]interface{}
 
-	if err := json.NewDecoder(resp.Body).Decode(&tickers); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&klines); err != nil {
 		b.logger.Errorf("Failed to decode market data: %v", err)
-		return nil, err
+		return
 	}
 
-	var marketData []*models.MarketData
-	for _, ticker := range tickers {
-		openPrice, _ := strconv.ParseFloat(ticker.OpenPrice, 64)
-		closePrice, _ := strconv.ParseFloat(ticker.ClosePrice, 64)
-		volume, _ := strconv.ParseFloat(ticker.Volume, 64)
+	for _, kline := range klines {
+		//var _openTime int64 = kline[0].(float64)
+		openTime := int64(kline[0].(float64)) //strconv.ParseInt(kline[0].(string), 10, 64)
+		openPrice, _ := strconv.ParseFloat(kline[1].(string), 64)
+		closePrice, _ := strconv.ParseFloat(kline[4].(string), 64)
+		volume, _ := strconv.ParseFloat(kline[5].(string), 64)
+		lastTime = time.UnixMilli(openTime)
 
 		marketData = append(marketData, &models.MarketData{
-			Exchange:   "binance",
-			Symbol:     ticker.Symbol,
+			Symbol:     symbol,
 			OpenPrice:  openPrice,
 			ClosePrice: closePrice,
 			Volume:     volume,
-			TimeFrame:  "1d", // Пример таймфрейма
-			Timestamp:  time.Now(),
+			TimeFrame:  interval,
+			Timestamp:  time.UnixMilli(openTime),
 		})
 	}
 
-	return marketData, nil
+	return
 }

@@ -17,11 +17,15 @@ CREATE TABLE IF NOT EXISTS market_data_statuss (
     exchange TEXT NOT NULL,
     symbol TEXT NOT NULL,
     time_frame TEXT NOT NULL,
-    active BOOLEAN NOT NULL DEFAULT FALSE 
+    active BOOLEAN NOT NULL DEFAULT FALSE,
     actual_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL,
     UNIQUE(exchange,symbol, time_frame)
 );
+
+INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, status)
+    VALUES ('binance', 'BTCUSDT', '5m', false, '');
+    
 
 -- Таблица для хранения информации о биржах
 CREATE TABLE IF NOT EXISTS accounts (

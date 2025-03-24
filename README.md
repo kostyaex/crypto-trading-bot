@@ -239,4 +239,4 @@ crypto-trading-bot/
 # Разработка
 
 Сформировать код модели, репозитория, сервиса для новой сущности:
-`go run cmd/generate/main.go -package crypto-trading-bot -model Product -fields "Name:string:name:text,Price:float64:price:numeric,Description:string:description:text"`
+`go run cmd/generate/main.go -package crypto-trading-bot -model MarketDataStatus -fields "Exchange:string:exchange:text,Symbol:string:symbol:text,TimeFrame:string:time_frame:text,Active:bool:active:BOOLEAN,ActualTime:time.Time:actual_time:timestamp,Status:string:status:text"`

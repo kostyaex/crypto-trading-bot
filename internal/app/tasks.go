@@ -23,7 +23,7 @@ func NewDataFetchingTask(repo *repositories.Repository, exchangeService services
 }
 
 func (t *DataFetchingTask) Run() {
-	allMarketData := t.exchangeService.FetchData()
+	allMarketData := t.exchangeService.LoadData()
 	// Публикация события о загрузке рыночных данных
 	event := MarketDataLoadedEvent{
 		MarketData: allMarketData,
