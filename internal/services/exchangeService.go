@@ -14,20 +14,18 @@ type ExchangeService interface {
 }
 
 type exchangeService struct {
-	repo                    *repositories.Repository
-	exchanges               []exchange.Exchange
-	logger                  *utils.Logger
-	marketDataService       MarketDataService
-	marketDataStatusService MarketDataStatusService
+	repo              *repositories.Repository
+	exchanges         []exchange.Exchange
+	logger            *utils.Logger
+	marketDataService MarketDataService
 }
 
-func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, marketDataStatusService MarketDataStatusService, marketDataService MarketDataService) ExchangeService {
+func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, marketDataService MarketDataService) ExchangeService {
 	return &exchangeService{
-		repo:                    repo,
-		logger:                  logger,
-		exchanges:               exchanges,
-		marketDataStatusService: marketDataStatusService,
-		marketDataService:       marketDataService,
+		repo:              repo,
+		logger:            logger,
+		exchanges:         exchanges,
+		marketDataService: marketDataService,
 	}
 }
 
@@ -38,7 +36,7 @@ func (s *exchangeService) LoadData() []*models.MarketData {
 	// перебираем все биржи и таблицу состояния данных - для каждой активной выполняем загрузку
 	// В таблице состояний записаны данные для загрузки: пара (символ), интервал, дата актуальности с которой нужно продолжить загрузку
 
-	statusList, err := s.marketDataStatusService.GetMarketDataStatusList()
+	statusList, err := s.marketDataService.GetMarketDataStatusList()
 	if err != nil {
 		s.logger.Errorf("Failed to GetMarketDataStatusList %v", err)
 		return nil
@@ -73,7 +71,7 @@ func (s *exchangeService) LoadData() []*models.MarketData {
 				s.logger.Errorf("Failed to save market data: %v", err)
 
 				status.Status = fmt.Sprintf("ОШИБКА: %v", err)
-				if err := s.marketDataStatusService.SaveMarketDataStatus(status); err != nil {
+				if err := s.marketDataService.SaveMarketDataStatus(status); err != nil {
 					s.logger.Errorf("Failed to save market data: %v", err)
 					return nil
 				}
@@ -84,7 +82,7 @@ func (s *exchangeService) LoadData() []*models.MarketData {
 			// Сохранение статуса загрузки данных
 			status.ActualTime = lastTime
 			status.Status = "OK"
-			if err := s.marketDataStatusService.SaveMarketDataStatus(status); err != nil {
+			if err := s.marketDataService.SaveMarketDataStatus(status); err != nil {
 				s.logger.Errorf("Failed to save market data: %v", err)
 				return nil
 			}

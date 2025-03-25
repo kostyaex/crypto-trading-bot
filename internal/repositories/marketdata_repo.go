@@ -3,12 +3,17 @@ package repositories
 import (
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
+	"database/sql"
+	"fmt"
 	"sort"
 )
 
 type MarketDataRepository interface {
 	SaveMarketData(data []*models.MarketData) error
 	GetMarketData(symbol string, limit int) ([]*models.MarketData, error)
+	GetMarketDataStatus(id int) (*models.MarketDataStatus, error)
+	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
+	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 }
 
 type marketDataRepository struct {
@@ -77,4 +82,53 @@ func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*model
 
 	r.logger.Infof("Market data retrieved for symbol %s: %v", symbol, marketData)
 	return marketData, nil
+}
+
+// GetMarketDataStatus находит marketdatastatus по ID.
+func (r *marketDataRepository) GetMarketDataStatus(id int) (*models.MarketDataStatus, error) {
+	var marketdatastatus models.MarketDataStatus
+	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss WHERE id = $1"
+
+	err := r.db.Get(&marketdatastatus, query, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			r.logger.Errorf("marketdatastatus with ID %d not found", id)
+			return nil, fmt.Errorf("marketdatastatus not found")
+		}
+		r.logger.Errorf("Failed to get marketdatastatus: %v", err)
+		return nil, err
+	}
+	return &marketdatastatus, nil
+}
+
+// SaveMarketDataStatus сохраняет marketdatastatus в базу данных.
+func (r *marketDataRepository) SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error {
+	query := "INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, actual_time, status) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (exchange,symbol,time_frame) DO UPDATE SET active = $4, actual_time = $5, status = $6;"
+	_, err := r.db.Exec(query,
+		marketdatastatus.Exchange,
+		marketdatastatus.Symbol,
+		marketdatastatus.TimeFrame,
+		marketdatastatus.Active,
+		marketdatastatus.ActualTime,
+		marketdatastatus.Status,
+	)
+	if err != nil {
+		r.logger.Errorf("Failed to save marketdatastatus: %v", err)
+		return err
+	}
+	return nil
+}
+
+// GetMarketDataStatusList выбирает список marketdatastatus из базы данных.
+func (r *marketDataRepository) GetMarketDataStatusList() ([]*models.MarketDataStatus, error) {
+	var marketdatastatus []*models.MarketDataStatus
+	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss"
+
+	err := r.db.Select(&marketdatastatus, query)
+	if err != nil {
+		r.logger.Errorf("Failed to get data from market_data_statuss: %v", err)
+		return nil, err
+	}
+
+	return marketdatastatus, nil
 }
