@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS market_data (
     open_price NUMERIC(20, 8) NOT NULL,
     close_price NUMERIC(20, 8) NOT NULL,
     volume NUMERIC(20,3) NOT NULL,
+    buy_volume NUMERIC(20,3) NOT NULL,
+    sell_volume NUMERIC(20,3) NOT NULL,
     time_frame TEXT NOT NULL,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS market_data_statuss (
 );
 
 INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, status)
-    VALUES ('binance', 'BTCUSDT', '5m', false, '');
+    VALUES ('binance', 'BTCUSDT', '5m', false, '') ON CONFLICT DO NOTHING;
     
 
 -- Таблица для хранения информации о биржах

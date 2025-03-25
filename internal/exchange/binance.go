@@ -55,6 +55,7 @@ func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (m
 		openPrice, _ := strconv.ParseFloat(kline[1].(string), 64)
 		closePrice, _ := strconv.ParseFloat(kline[4].(string), 64)
 		volume, _ := strconv.ParseFloat(kline[5].(string), 64)
+		buyVolume, _ := strconv.ParseFloat(kline[9].(string), 64)
 		lastTime = time.UnixMilli(openTime)
 
 		marketData = append(marketData, &models.MarketData{
@@ -62,6 +63,8 @@ func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (m
 			OpenPrice:  openPrice,
 			ClosePrice: closePrice,
 			Volume:     volume,
+			BuyVolume:  buyVolume,
+			SellVolume: volume - buyVolume,
 			TimeFrame:  interval,
 			Timestamp:  time.UnixMilli(openTime),
 		})

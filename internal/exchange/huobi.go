@@ -45,6 +45,7 @@ func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (mar
 			Open   float64 `json:"open"`
 			Close  float64 `json:"close"`
 			Amount float64 `json:"amount"`
+			Vol    float64 `json:"vol"`
 		} `json:"data"`
 	}
 
@@ -62,6 +63,8 @@ func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (mar
 			OpenPrice:  kline.Open,
 			ClosePrice: kline.Close,
 			Volume:     kline.Amount,
+			BuyVolume:  kline.Amount,
+			SellVolume: kline.Vol - kline.Amount,
 			TimeFrame:  interval,
 			Timestamp:  timestamp,
 		})
