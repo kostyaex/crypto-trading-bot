@@ -66,8 +66,16 @@ func (s *exchangeService) LoadData() []*models.MarketData {
 
 			allMarketData = append(allMarketData, marketData...)
 
+			// Кластеризация данных
+			numClusters := 5
+			clusteredMarketData, err := s.marketDataService.ClusterMarketData(marketData, numClusters)
+			if err != nil {
+				s.logger.Errorf("Failed to cluster market data: %v", err)
+				return nil
+			}
+
 			// Сохранение рыночных данных в базу данных
-			if err := s.marketDataService.SaveMarketData(marketData); err != nil {
+			if err := s.marketDataService.SaveMarketData(clusteredMarketData); err != nil {
 				s.logger.Errorf("Failed to save market data: %v", err)
 
 				status.Status = fmt.Sprintf("ОШИБКА: %v", err)

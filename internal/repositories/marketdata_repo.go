@@ -33,7 +33,7 @@ func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO market_data (exchange, symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
+	stmt, err := tx.Prepare("INSERT INTO market_data (exchange, symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp, vwap, buy_sell_volume_ratio, buy_sell_price_ratio, net_volume, net_volume_ratio, net_buy_sell_volume, buy_cluster, sell_cluster) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)")
 	if err != nil {
 		r.logger.Errorf("Failed to prepare statement: %v", err)
 		tx.Rollback()
@@ -42,7 +42,7 @@ func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
 	defer stmt.Close()
 
 	for _, d := range data {
-		_, err := stmt.Exec(d.Exchange, d.Symbol, d.OpenPrice, d.ClosePrice, d.Volume, d.BuyVolume, d.SellVolume, d.TimeFrame, d.Timestamp)
+		_, err := stmt.Exec(d.Exchange, d.Symbol, d.OpenPrice, d.ClosePrice, d.Volume, d.BuyVolume, d.SellVolume, d.TimeFrame, d.Timestamp, d.VWAP, d.BuySellVolumeRatio, d.BuySellPriceRatio, d.NetVolume, d.NetVolumeRatio, d.NetBuySellVolume, d.BuyCluster, d.SellCluster)
 		if err != nil {
 			r.logger.Errorf("Failed to insert market data: %v", err)
 			tx.Rollback()
@@ -61,7 +61,7 @@ func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
 
 func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*models.MarketData, error) {
 	query := `
-        SELECT symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp
+        SELECT symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp, vwap, buy_sell_volume_ratio, buy_sell_price_ratio, net_volume, net_volume_ratio, net_buy_sell_volume, buy_cluster, sell_cluster
         FROM market_data
         WHERE symbol = $1
         ORDER BY timestamp DESC

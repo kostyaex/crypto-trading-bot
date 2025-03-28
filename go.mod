@@ -1,28 +1,23 @@
 module crypto-trading-bot
 
-go 1.23
+go 1.23.0
 
 toolchain go1.23.7
 
 require (
+	github.com/a-h/templ v0.3.833
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/lib/pq v1.10.9
+	gonum.org/v1/gonum v0.16.0
 )
 
 require (
-	github.com/a-h/templ v0.3.833 // indirect
-	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
-	github.com/shopspring/decimal v1.4.0 // indirect
 )
 
 require (
-	github.com/adshao/go-binance/v2 v2.8.1
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/gorilla/mux v1.8.1
@@ -44,7 +39,7 @@ require (
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

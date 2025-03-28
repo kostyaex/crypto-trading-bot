@@ -1,9 +1,11 @@
 package services
 
 import (
+	"crypto-trading-bot/internal/calc"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
+	"fmt"
 )
 
 type MarketDataService interface {
@@ -12,6 +14,7 @@ type MarketDataService interface {
 	GetMarketDataStatus(id int) (*models.MarketDataStatus, error)
 	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
+	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
 }
 
 type marketDataService struct {
@@ -63,4 +66,78 @@ func (s *marketDataService) GetMarketDataStatusList() ([]*models.MarketDataStatu
 		return nil, err
 	}
 	return marketdatastatus, nil
+}
+
+//
+// Кластеризация
+//
+
+// ClusterMarketData кластеризует рыночные данные по объемам покупок и продаж по ценам.
+func (s *marketDataService) ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("no data to cluster")
+	}
+
+	// // Подготовка данных для кластеризации
+	// points := mat.NewDense(len(data), 2, nil)
+	// for i, d := range data {
+	// 	points.Set(i, 0, d.OpenPrice)
+	// 	points.Set(i, 1, d.BuyVolume)
+	// }
+
+	// // Кластеризация объемов покупок
+	// buyClusters, err := kMeansCluster(points, numClusters)
+	// if err != nil {
+	// 	s.logger.Errorf("Failed to cluster buy volumes: %v", err)
+	// 	return nil, err
+	// }
+
+	// // Подготовка данных для кластеризации объемов продаж
+	// for i, d := range data {
+	// 	points.Set(i, 1, d.SellVolume)
+	// }
+
+	// // Кластеризация объемов продаж
+	// sellClusters, err := kMeansCluster(points, numClusters)
+	// if err != nil {
+	// 	s.logger.Errorf("Failed to cluster sell volumes: %v", err)
+	// 	return nil, err
+	// }
+
+	// Подготовка данных для кластеризации
+	points := make([]calc.WeightedPoint, len(data))
+	for _, d := range data {
+		points = append(points, calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume})
+	}
+
+	// Кластеризация объемов покупок
+	buyClusters := calc.KMeansWeighted1D(points, numClusters, 100)
+
+	points = make([]calc.WeightedPoint, len(data))
+	for _, d := range data {
+		points = append(points, calc.WeightedPoint{Value: d.OpenPrice, Weight: d.SellVolume})
+	}
+
+	// Кластеризация объемов продаж
+	sellClusters := calc.KMeansWeighted1D(points, numClusters, 100)
+
+	// заполнение кластеров в данные биржи
+	for _, d := range data {
+		for _, cluster := range buyClusters {
+			for _, point := range cluster.Points {
+				if d.OpenPrice == point.Value {
+					d.BuyCluster = cluster.Center
+				}
+			}
+		}
+		for _, cluster := range sellClusters {
+			for _, point := range cluster.Points {
+				if d.OpenPrice == point.Value {
+					d.SellCluster = cluster.Center
+				}
+			}
+		}
+	}
+
+	return data, nil
 }
