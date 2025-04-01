@@ -2,24 +2,15 @@
 
 -- Таблица для хранения рыночных данных
 CREATE TABLE IF NOT EXISTS market_data (
-    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     exchange TEXT NOT NULL,
     symbol TEXT NOT NULL,
+    time_frame TEXT NOT NULL,
     open_price NUMERIC(20, 8) NOT NULL,
     close_price NUMERIC(20, 8) NOT NULL,
     volume NUMERIC(20,3) NOT NULL,
     buy_volume NUMERIC(20,3) NOT NULL,
-    sell_volume NUMERIC(20,3) NOT NULL,
-    time_frame TEXT NOT NULL,
-    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    vwap NUMERIC(20,3) NOT NULL,
-    buy_sell_volume_ratio NUMERIC(20,3) NOT NULL,
-    buy_sell_price_ratio NUMERIC(20,3) NOT NULL,
-    net_volume NUMERIC(20,3) NOT NULL,
-    net_volume_ratio NUMERIC(20,3) NOT NULL,
-    net_buy_sell_volume NUMERIC(20,3) NOT NULL,
-    buy_cluster NUMERIC(20, 8) NOT NULL,
-    sell_cluster NUMERIC(20, 8) NOT NULL
+    sell_volume NUMERIC(20,3) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS market_data_statuss (
@@ -36,6 +27,15 @@ CREATE TABLE IF NOT EXISTS market_data_statuss (
 INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, status)
     VALUES ('binance', 'BTCUSDT', '5m', false, '') ON CONFLICT DO NOTHING;
     
+
+CREATE TABLE IF NOT EXISTS cluster_data (
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    symbol TEXT NOT NULL,
+    time_frame TEXT NOT NULL,
+    is_buysell BOOLEAN NOT NULL DEFAULT FALSE,
+    cluster_price NUMERIC(20, 8) NOT NULL,
+    volume NUMERIC(20,3) NOT NULL
+);
 
 -- Таблица для хранения информации о биржах
 CREATE TABLE IF NOT EXISTS accounts (
