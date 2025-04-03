@@ -21,10 +21,11 @@ type App struct {
 	repo      *repositories.Repository
 	exchanges []exchange.Exchange
 	//trader    *trading.Trader
-	webServer      *web.Server
-	scheduler      *Scheduler
-	logger         *utils.Logger
-	eventPublisher *EventPublisher
+	webServer         *web.Server
+	scheduler         *Scheduler
+	logger            *utils.Logger
+	eventPublisher    *EventPublisher
+	marketDataService services.MarketDataService
 }
 
 func NewApp() *App {
@@ -52,11 +53,11 @@ func NewApp() *App {
 	strategyService := services.NewStrategyService(repo)
 	behaviorTreeService := services.NewBehaviorTree(repo)
 	indicatorService := services.NewIndicatorService(repo)
-	marketDataService := services.NewMarketDataService(repo, logger)
-	excahngeService := services.NewEchangeService(repo, logger, exchanges, marketDataService)
+	exchangeService := services.NewEchangeService(repo, logger, exchanges)
+	marketDataService := services.NewMarketDataService(repo, logger, exchanges, exchangeService)
 
 	//trader := trading.NewTrader(repo, exchanges, logger)
-	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, excahngeService, strategyService, marketDataService)
+	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, exchangeService, strategyService, marketDataService)
 	scheduler := NewScheduler(exchanges, logger)
 	eventPublisher := NewEventPublisher()
 
@@ -74,10 +75,11 @@ func NewApp() *App {
 		repo:      repo,
 		exchanges: exchanges,
 		//trader:    trader,
-		webServer:      webServer,
-		scheduler:      scheduler,
-		logger:         logger,
-		eventPublisher: eventPublisher,
+		webServer:         webServer,
+		scheduler:         scheduler,
+		logger:            logger,
+		eventPublisher:    eventPublisher,
+		marketDataService: marketDataService,
 	}
 }
 
@@ -92,9 +94,12 @@ func (a *App) Run() error {
 		cancel()
 	}()
 
+	// Запуск загрузки данных с бирж
+	go a.marketDataService.RunSchudeler(ctx)
+
 	// Запуск планировщика
-	a.scheduler.Start()
-	defer a.scheduler.Stop()
+	// a.scheduler.Start()
+	// defer a.scheduler.Stop()
 
 	// // Добавление задачи для загрузки данных с бирж каждые 5 минут
 	// task := NewDataFetchingTask(a.repo, a.exchanges, a.logger, a.eventPublisher)

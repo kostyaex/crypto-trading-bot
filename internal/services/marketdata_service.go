@@ -1,11 +1,15 @@
 package services
 
 import (
+	"context"
 	"crypto-trading-bot/internal/calc"
+	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,15 +20,158 @@ type MarketDataService interface {
 	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
+	RunSchudeler(ctx context.Context)
 }
 
 type marketDataService struct {
-	repo   *repositories.Repository
-	logger *utils.Logger
+	repo            *repositories.Repository
+	logger          *utils.Logger
+	exchanges       []exchange.Exchange
+	exchangeService ExchangeService
+	mu              sync.Mutex
+	timeFrame       string                                   // интервал для группировки данных
+	intervalsOrder  []time.Time                              // Список ключей в порядке добавления
+	intervals       map[time.Time]*models.MarketDataInterval // соответствие для хранения загруженных интервалов
+	lastTime        time.Time
 }
 
-func NewMarketDataService(repo *repositories.Repository, logger *utils.Logger) MarketDataService {
-	return &marketDataService{repo: repo, logger: logger}
+func NewMarketDataService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, exchangeService ExchangeService) MarketDataService {
+	return &marketDataService{
+		repo:            repo,
+		logger:          logger,
+		timeFrame:       "5m",
+		intervalsOrder:  make([]time.Time, 0),
+		intervals:       make(map[time.Time]*models.MarketDataInterval),
+		exchanges:       exchanges,
+		exchangeService: exchangeService,
+	}
+}
+
+// Запустить регламентную загрузку.
+func (s *marketDataService) RunSchudeler(ctx context.Context) {
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Получен сигнал завершения
+			return
+		default:
+			// Проверяем время последнего запуска. Если не прошло 5 секунд - ждем 1 секунду
+			if time.Now().Add(-5 * time.Second).Before(s.lastTime) {
+				s.logger.Debug("Ждем как пройдет 5 секунд с последнего запуска\n")
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			//s.logger.Debug("LoadData\n")
+			s.LoadData()
+			s.lastTime = time.Now()
+		}
+	}
+}
+
+// добавить загруженные данные. При этом происходит группировка по интервалам.
+func (s *marketDataService) Push(marketData models.MarketData) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	startTime, endTime, _, _ := GetIntervalBounds(marketData.Timestamp, s.timeFrame)
+	if _, exists := s.intervals[startTime]; !exists {
+		s.intervals[startTime] = &models.MarketDataInterval{
+			Start:   startTime,
+			End:     endTime,
+			Records: make([]models.MarketData, 0),
+		}
+		s.intervalsOrder = append(s.intervalsOrder, marketData.Timestamp)
+	}
+	s.intervals[startTime].Records = append(s.intervals[startTime].Records, marketData)
+
+}
+
+func (s *marketDataService) Pull(timeLimit time.Time) []models.MarketDataInterval {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var completed []models.MarketDataInterval
+	var newOrder []time.Time
+
+	// Итерация по сохранённому порядку
+	for _, start := range s.intervalsOrder {
+		group, exists := s.intervals[start]
+		if exists && timeLimit.After(group.End) {
+			completed = append(completed, *group)
+			delete(s.intervals, start)
+		} else {
+			newOrder = append(newOrder, start)
+		}
+	}
+
+	s.intervalsOrder = newOrder // Обновление списка ключей
+
+	return completed
+}
+
+// Загружает пары по интервалам указанным в таблице marketdataStatuses.
+// Возвращает данными свернутыми интервалами: сами интервалы массивом (чтобы сохранить порядок) и соответствие массивов по интервалам.
+// Интервалы должны быть полными, т.е. по всем биржам в этом интервале данные должны быть загружены полностью, другими словами уже есть данные за следующий интервал.
+func (s *marketDataService) LoadData() {
+	s.logger.Infof("Starting data fetching")
+
+	// перебираем все биржи и таблицу состояния данных - для каждой активной выполняем загрузку
+	// В таблице состояний записаны данные для загрузки: пара (символ), интервал, дата актуальности с которой нужно продолжить загрузку
+
+	statusList, err := s.GetMarketDataStatusList()
+	if err != nil {
+		s.logger.Errorf("Failed to GetMarketDataStatusList %v", err)
+		return
+	}
+
+	for _, ex := range s.exchanges {
+
+		for _, status := range statusList {
+
+			if !status.Active || status.Exchange != strings.ToLower(ex.GetName()) {
+				continue
+			}
+
+			// получаем начало интервала, чтобы получить интервал полностью
+			//startTime, _, _, _ := GetIntervalBounds(status.ActualTime, status.TimeFrame)
+			startTime := status.ActualTime
+
+			s.logger.Infof("Fetching data from exchange: %s %s %v", ex.GetName(), status.Symbol, startTime)
+
+			marketData, lastTime, err := s.exchangeService.LoadData(ex, status.Symbol, status.TimeFrame, startTime)
+			if err != nil {
+				s.logger.Errorf("Failed to fetch data from exchange %s: %v", ex.GetName(), err)
+				continue
+			}
+
+			// Сохранение рыночных данных в базу данных
+			if err := s.SaveMarketData(marketData); err != nil {
+				s.logger.Errorf("Failed to save market data: %v", err)
+
+				status.Status = fmt.Sprintf("ОШИБКА: %v", err)
+				if err := s.SaveMarketDataStatus(status); err != nil {
+					s.logger.Errorf("Failed to save market data: %v", err)
+					return
+				}
+
+				return
+			}
+
+			// Сохранение статуса загрузки данных
+			status.ActualTime = lastTime
+			status.Status = "OK"
+			if err := s.SaveMarketDataStatus(status); err != nil {
+				s.logger.Errorf("Failed to save market data: %v", err)
+				return
+			}
+		}
+
+	}
+
+	s.logger.Infof("Data fetching task completed")
+
+	return
 }
 
 // SaveMarketData сохраняет рыночные данные.

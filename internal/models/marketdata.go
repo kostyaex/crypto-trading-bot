@@ -3,9 +3,12 @@ package models
 import "time"
 
 // интервал с указанием таймфрейма и начала соответствующего отрезка
-type MarketInterval struct {
-	TimeFrame string    `json:"time_frame"`
-	Start     time.Time `json:"timestamp"`
+type MarketDataInterval struct {
+	TimeFrame string
+	Symbol    string
+	Start     time.Time
+	End       time.Time
+	Records   []MarketData
 }
 
 // MarketData представляет модель данных о рынке.

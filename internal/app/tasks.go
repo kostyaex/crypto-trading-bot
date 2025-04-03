@@ -1,6 +1,7 @@
 package app
 
 import (
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/services"
 	"crypto-trading-bot/internal/utils"
@@ -11,6 +12,7 @@ type DataFetchingTask struct {
 	exchangeService services.ExchangeService
 	logger          *utils.Logger
 	eventPublisher  *EventPublisher
+	prevIntervalMD  []*models.MarketData // здесь сохраняем данные за предудыщий интервал
 }
 
 func NewDataFetchingTask(repo *repositories.Repository, exchangeService services.ExchangeService, logger *utils.Logger, eventPublisher *EventPublisher) *DataFetchingTask {
@@ -23,10 +25,10 @@ func NewDataFetchingTask(repo *repositories.Repository, exchangeService services
 }
 
 func (t *DataFetchingTask) Run() {
-	allMarketData := t.exchangeService.LoadData()
-	// Публикация события о загрузке рыночных данных
-	event := MarketDataLoadedEvent{
-		MarketData: allMarketData,
-	}
-	t.eventPublisher.Publish(event)
+	// allMarketData := t.exchangeService.LoadData()
+	// // Публикация события о загрузке рыночных данных
+	// event := MarketDataLoadedEvent{
+	// 	MarketData: allMarketData,
+	// }
+	// t.eventPublisher.Publish(event)
 }

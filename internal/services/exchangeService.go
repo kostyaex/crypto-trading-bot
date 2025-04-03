@@ -5,100 +5,38 @@ import (
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
-	"fmt"
-	"strings"
+	"time"
 )
 
 type ExchangeService interface {
-	LoadData() []*models.MarketData
+	LoadData(exchange exchange.Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error)
 }
 
 type exchangeService struct {
-	repo              *repositories.Repository
-	exchanges         []exchange.Exchange
-	logger            *utils.Logger
-	marketDataService MarketDataService
+	repo      *repositories.Repository
+	logger    *utils.Logger
+	exchanges []exchange.Exchange
 }
 
-func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, marketDataService MarketDataService) ExchangeService {
+func NewEchangeService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange) ExchangeService {
 	return &exchangeService{
-		repo:              repo,
-		logger:            logger,
-		exchanges:         exchanges,
-		marketDataService: marketDataService,
+		repo:      repo,
+		logger:    logger,
+		exchanges: exchanges,
 	}
 }
 
-func (s *exchangeService) LoadData() []*models.MarketData {
-	s.logger.Infof("Starting data fetching")
-	var allMarketData []*models.MarketData
+// Загружает данные с указанной бирже по указанной паре и интервалу
+func (s *exchangeService) LoadData(exchange exchange.Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
 
-	// перебираем все биржи и таблицу состояния данных - для каждой активной выполняем загрузку
-	// В таблице состояний записаны данные для загрузки: пара (символ), интервал, дата актуальности с которой нужно продолжить загрузку
+	s.logger.Infof("Fetching data from exchange: %s %s %v", exchange.GetName(), symbol, startTime)
 
-	statusList, err := s.marketDataService.GetMarketDataStatusList()
+	marketData, lastTime, err = exchange.GetMarketData(symbol, timeFrame, startTime)
 	if err != nil {
-		s.logger.Errorf("Failed to GetMarketDataStatusList %v", err)
-		return nil
+		s.logger.Errorf("Failed to fetch data from exchange %s: %v", exchange.GetName(), err)
+		return
 	}
-
-	for _, ex := range s.exchanges {
-
-		for _, status := range statusList {
-
-			if !status.Active || status.Exchange != strings.ToLower(ex.GetName()) {
-				continue
-			}
-
-			s.logger.Infof("Fetching data from exchange: %s %s %v", ex.GetName(), status.Symbol, status.ActualTime)
-
-			marketData, lastTime, err := ex.GetMarketData(status.Symbol, status.TimeFrame, status.ActualTime)
-			if err != nil {
-				s.logger.Errorf("Failed to fetch data from exchange %s: %v", ex.GetName(), err)
-				continue
-			}
-
-			// if err := s.repo.MarketData.SaveMarketData(marketData); err != nil {
-			// 	s.logger.Errorf("Failed to save market data for exchange %s: %v", ex.GetName(), err)
-			// } else {
-			// 	s.logger.Infof("Market data saved for exchange %s", ex.GetName())
-			// }
-
-			allMarketData = append(allMarketData, marketData...)
-
-			// // Кластеризация данных
-			// numClusters := 5
-			// clusteredMarketData, err := s.marketDataService.ClusterMarketData(marketData, numClusters)
-			// if err != nil {
-			// 	s.logger.Errorf("Failed to cluster market data: %v", err)
-			// 	return nil
-			// }
-
-			// Сохранение рыночных данных в базу данных
-			if err := s.marketDataService.SaveMarketData(marketData); err != nil {
-				s.logger.Errorf("Failed to save market data: %v", err)
-
-				status.Status = fmt.Sprintf("ОШИБКА: %v", err)
-				if err := s.marketDataService.SaveMarketDataStatus(status); err != nil {
-					s.logger.Errorf("Failed to save market data: %v", err)
-					return nil
-				}
-
-				return nil
-			}
-
-			// Сохранение статуса загрузки данных
-			status.ActualTime = lastTime
-			status.Status = "OK"
-			if err := s.marketDataService.SaveMarketDataStatus(status); err != nil {
-				s.logger.Errorf("Failed to save market data: %v", err)
-				return nil
-			}
-		}
-
-	}
-
 	s.logger.Infof("Data fetching task completed")
 
-	return allMarketData
+	return
 }
