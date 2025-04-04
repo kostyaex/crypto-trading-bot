@@ -56,9 +56,9 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 			// Получен сигнал завершения
 			return
 		default:
-			// Проверяем время последнего запуска. Если не прошло 5 секунд - ждем 1 секунду
-			if time.Now().Add(-5 * time.Second).Before(s.lastTime) {
-				s.logger.Debug("Ждем как пройдет 5 секунд с последнего запуска\n")
+			// Проверяем время последнего запуска.
+			if time.Now().Add(-1 * time.Second).Before(s.lastTime) {
+				s.logger.Debug("Ждем как пройдет 1 секунда с последнего запуска\n")
 				time.Sleep(1 * time.Second)
 				continue
 			}
@@ -142,6 +142,10 @@ func (s *marketDataService) LoadData() {
 			marketData, lastTime, err := s.exchangeService.LoadData(ex, status.Symbol, status.TimeFrame, startTime)
 			if err != nil {
 				s.logger.Errorf("Failed to fetch data from exchange %s: %v", ex.GetName(), err)
+				continue
+			}
+
+			if len(marketData) == 0 {
 				continue
 			}
 

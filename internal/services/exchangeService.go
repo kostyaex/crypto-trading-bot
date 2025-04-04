@@ -36,6 +36,11 @@ func (s *exchangeService) LoadData(exchange exchange.Exchange, symbol string, ti
 		s.logger.Errorf("Failed to fetch data from exchange %s: %v", exchange.GetName(), err)
 		return
 	}
+
+	if lastTime.Before(startTime) {
+		lastTime = startTime
+	}
+
 	s.logger.Infof("Data fetching task completed")
 
 	return

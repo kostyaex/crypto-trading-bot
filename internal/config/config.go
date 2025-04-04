@@ -1,7 +1,9 @@
 package config
 
 import (
+	"crypto-trading-bot/internal/utils"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/viper"
@@ -49,8 +51,21 @@ type Config struct {
 
 // LoadConfig загружает конфигурацию из файла и переменных окружения
 func LoadConfig() *Config {
-	viper.AddConfigPath("./")
-	viper.AddConfigPath("../")
+	// Получение текущего рабочего каталога
+	currentDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// обрезаем путь до корня приложения
+	currentDir, err = utils.TrimPathToDir(currentDir, "crypto-trading-bot")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Текущий каталог: %v\n", currentDir)
+
+	viper.AddConfigPath(currentDir)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 

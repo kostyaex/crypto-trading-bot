@@ -1,0 +1,54 @@
+package services
+
+import (
+	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/exchange"
+	"crypto-trading-bot/internal/repositories"
+	"crypto-trading-bot/internal/utils"
+	"log"
+)
+
+type TestSetup struct {
+	cfg       *config.Config
+	db        *repositories.DB
+	repo      *repositories.Repository
+	exchanges []exchange.Exchange
+	logger    *utils.Logger
+
+	exchangeService   ExchangeService
+	marketDataService MarketDataService
+}
+
+// NewTestSetup инициализирует все необходимые зависимости для тестов
+func NewTestSetup() *TestSetup {
+	cfg := config.LoadConfig()
+
+	db, err := repositories.NewDB(cfg)
+
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	logger := utils.NewLogger(cfg.Logging.Level)
+
+	exchanges := []exchange.Exchange{
+		exchange.NewBinance(cfg.Binance.APIKey, cfg.Binance.APISecret, logger),
+		//exchange.NewHuobi(cfg.Huobi.APIKey, cfg.Huobi.APISecret, logger),
+	}
+
+	repo := repositories.NewRepository(db, logger)
+
+	exchangeService := NewEchangeService(repo, logger, exchanges)
+	marketDataService := NewMarketDataService(repo, logger, exchanges, exchangeService)
+
+	return &TestSetup{
+		cfg:               cfg,
+		db:                db,
+		repo:              repo,
+		exchanges:         exchanges,
+		logger:            logger,
+		exchangeService:   exchangeService,
+		marketDataService: marketDataService,
+	}
+
+}
