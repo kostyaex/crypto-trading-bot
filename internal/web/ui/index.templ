@@ -1,15 +1,11 @@
 package ui
 
-import (
-	"strconv"
-	"path"
-	"crypto-trading-bot/internal/models"
-)
 
 templ headerComponent(title string) {
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script src="//unpkg.com/alpinejs" defer></script>
 		<title>{ title }</title>
 		<style>
 			body {
@@ -55,41 +51,21 @@ templ headerComponent(title string) {
 	</head>
 }
 
-templ IndexComponent(strategies []*models.Strategy) {
+templ IndexComponent() {
 	<!DOCTYPE html>
 	<html lang="en">
 	@headerComponent("Crypto Trading Bot")
 	<body>
 		<div class="container">
-			<h1>Trading Strategies</h1>
-			<a href="/strategies/new" class="button">Add New Strategy</a>
-			<table>
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Name</th>
-						<th>Description</th>
-						<th>Active</th>
-						<th>Actions</th>
-					</tr>
-				</thead>
-				<tbody>
-				for _, strat := range strategies {
-					<tr>
-						<td>{strconv.Itoa(strat.ID)}</td>
-						<td>{strat.Name}</td>
-						<td>{strat.Description}</td>
-						<td>{strconv.FormatBool(strat.Active)}</td>
-						<td>
-							<a href={ "/"+templ.SafeURL(path.Join("strategies", strconv.Itoa(strat.ID), "edit", "/")) } class="button">Edit</a>
-							<form action={ "/"+templ.SafeURL(path.Join("strategies", strconv.Itoa(strat.ID),"delete", "/")) } method="POST" style="display:inline;">
-								<button type="submit" class="button" style="background-color: #dc3545;">Delete</button>
-							</form>
-						</td>
-					</tr>
-				}
-				</tbody>
-			</table>
+			<h1>Dashboard</h1>
+
+			<div x-data="{ items: [] }" x-init="fetch('/resources/market_data_statuss')
+			.then(response => response.json())
+			.then(data => items = data)">
+			<template x-for="item in items" :key="item.id">
+				<div x-text="item.id"></div>
+			</template>
+			</div>
 		</div>
 	</body>
 	</html>
