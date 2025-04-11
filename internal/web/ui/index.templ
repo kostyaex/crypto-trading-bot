@@ -1,53 +1,13 @@
 package ui
 
-
 templ headerComponent(title string) {
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<script src="//unpkg.com/alpinejs" defer></script>
 		<title>{ title }</title>
-		<style>
-			body {
-				font-family: Arial, sans-serif;
-				margin: 0;
-				padding: 0;
-				background-color: #f4f4f9;
-			}
-			.container {
-				width: 80%;
-				margin: 0 auto;
-				padding: 20px;
-			}
-			table {
-				width: 100%;
-				border-collapse: collapse;
-				margin-top: 20px;
-			}
-			th, td {
-				border: 1px solid #ddd;
-				padding: 8px;
-				text-align: left;
-			}
-			th {
-				background-color: #f2f2f2;
-			}
-			tr:hover {
-				background-color: #f1f1f1;
-			}
-			.button {
-				display: inline-block;
-				padding: 10px 20px;
-				margin-top: 20px;
-				background-color: #007bff;
-				color: white;
-				text-decoration: none;
-				border-radius: 5px;
-			}
-			.button:hover {
-				background-color: #0056b3;
-			}
-		</style>
+		<script src="//unpkg.com/alpinejs" defer></script>
+		<script src="/assets/js/htmx.min.js"></script>
+		<link rel="stylesheet" href="/assets/styles/app.css">
 	</head>
 }
 
@@ -59,13 +19,7 @@ templ IndexComponent() {
 		<div class="container">
 			<h1>Dashboard</h1>
 
-			<div x-data="{ items: [] }" x-init="fetch('/resources/market_data_statuss')
-			.then(response => response.json())
-			.then(data => items = data)">
-			<template x-for="item in items" :key="item.id">
-				<div x-text="item.id"></div>
-			</template>
-			</div>
+			<a href="/resources/market_data_statuss" class="button">market_data_statuss</a>
 		</div>
 	</body>
 	</html>

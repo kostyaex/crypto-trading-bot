@@ -29,20 +29,20 @@ func headerComponent(title string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><script src=\"//unpkg.com/alpinejs\" defer></script><title>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/index.templ`, Line: 9, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/index.templ`, Line: 7, Col: 16}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><style>\n\t\t\tbody {\n\t\t\t\tfont-family: Arial, sans-serif;\n\t\t\t\tmargin: 0;\n\t\t\t\tpadding: 0;\n\t\t\t\tbackground-color: #f4f4f9;\n\t\t\t}\n\t\t\t.container {\n\t\t\t\twidth: 80%;\n\t\t\t\tmargin: 0 auto;\n\t\t\t\tpadding: 20px;\n\t\t\t}\n\t\t\ttable {\n\t\t\t\twidth: 100%;\n\t\t\t\tborder-collapse: collapse;\n\t\t\t\tmargin-top: 20px;\n\t\t\t}\n\t\t\tth, td {\n\t\t\t\tborder: 1px solid #ddd;\n\t\t\t\tpadding: 8px;\n\t\t\t\ttext-align: left;\n\t\t\t}\n\t\t\tth {\n\t\t\t\tbackground-color: #f2f2f2;\n\t\t\t}\n\t\t\ttr:hover {\n\t\t\t\tbackground-color: #f1f1f1;\n\t\t\t}\n\t\t\t.button {\n\t\t\t\tdisplay: inline-block;\n\t\t\t\tpadding: 10px 20px;\n\t\t\t\tmargin-top: 20px;\n\t\t\t\tbackground-color: #007bff;\n\t\t\t\tcolor: white;\n\t\t\t\ttext-decoration: none;\n\t\t\t\tborder-radius: 5px;\n\t\t\t}\n\t\t\t.button:hover {\n\t\t\t\tbackground-color: #0056b3;\n\t\t\t}\n\t\t</style></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"//unpkg.com/alpinejs\" defer></script><script src=\"/assets/js/htmx.min.js\"></script><link rel=\"stylesheet\" href=\"/assets/styles/app.css\"></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -79,7 +79,7 @@ func IndexComponent() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body><div class=\"container\"><h1>Dashboard</h1><div x-data=\"{}\" x-init=\"fetch(&#39;/resources/market_data_statuss&#39;)\n\t\t\t.then(response =&gt; response.json())\n\t\t\t.then(data =&gt; console.log(data))\"><!-- Ваши данные будут обновлены здесь --></div><div x-data=\"{ items: [] }\" x-init=\"fetch(&#39;/resources/market_data_statuss&#39;)\n\t\t\t.then(response =&gt; response.json())\n\t\t\t.then(data =&gt; items = data)\"><template x-for=\"item in items\" :key=\"item.id\"><div x-text=\"item.id\"></div></template></div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body><div class=\"container\"><h1>Dashboard</h1><a href=\"/resources/market_data_statuss\" class=\"button\">market_data_statuss</a></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

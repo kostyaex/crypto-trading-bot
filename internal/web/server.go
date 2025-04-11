@@ -9,7 +9,6 @@ import (
 	"crypto-trading-bot/internal/utils"
 	"crypto-trading-bot/internal/web/handlers"
 	"crypto-trading-bot/internal/web/ui"
-	"io"
 
 	//"crypto-trading-bot/internal/trading"
 	"log"
@@ -46,18 +45,32 @@ func NewServer(port string, repo *repositories.Repository, logger *utils.Logger,
 	}
 
 	// Настройка маршрутов для веб-интерфейса
-	fs := http.FileServer(http.Dir("./web/ui/static"))
-	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	fs := http.FileServer(http.Dir("./internal/web/ui/assets"))
+	s.router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 
+	//
 	// Определяем маршрут для проксирования запросов к PostgREST
-	router.HandleFunc("/resources/{resource}", ProxyHandler).Methods("GET")
+	//
 
+	// маршрут для получения метаданных
+	//router.HandleFunc("/resources", GetHandler).Methods("GET")
+
+	router.HandleFunc("/api/resources/{resource}", GetHandler).Methods("GET")
+	router.HandleFunc("/api/resources/{resource}", PostHandler).Methods("POST")
+	router.HandleFunc("/api/resources/{resource}", DeleteHandler).Methods("DELETE")
+	router.HandleFunc("/api/resources/{resource}", PatchHandler).Methods("PATCH")
+
+	///
+
+	resourcesHandler := handlers.NewResourcesHandler(logger)
 	strategyHandler := handlers.NewStrategyHandler(strategyService, logger)
 	marketDataHandler := handlers.NewMarketDataHandler(marketDataService, exchangeService, logger)
 
 	// // Настройка маршрутов для API
 
 	s.router.Handle("/", templ.Handler(ui.IndexComponent())).Methods("GET")
+
+	s.router.HandleFunc("/resources/{resource}", resourcesHandler.GetResourcesListPage).Methods("GET")
 
 	s.router.HandleFunc("/strategies", strategyHandler.GetStrategiesListPage).Methods("GET")
 	s.router.HandleFunc("/strategies", strategyHandler.GetStrategiesListPage).Methods("GET")
@@ -87,26 +100,4 @@ func (s *Server) Start(ctx context.Context) error {
 
 	log.Printf("Starting web server on port %s", s.port)
 	return s.server.ListenAndServe()
-}
-
-// ProxyHandler проксирует запросы к серверу PostgREST
-func ProxyHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	resource := vars["resource"]
-
-	// Формируем URL для запроса к PostgREST
-	postgrestURL := "http://localhost:3000/" + resource
-
-	// Выполняем GET-запрос к PostgREST
-	resp, err := http.Get(postgrestURL)
-	if err != nil {
-		http.Error(w, "Failed to connect to PostgREST", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Проксируем ответ от PostgREST обратно клиенту
-	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
 }

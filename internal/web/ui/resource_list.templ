@@ -1,0 +1,139 @@
+package ui
+
+import (
+	//"strconv"
+	//"path"
+	"fmt"
+)
+
+templ ResourceListPage(resource Resource) {
+	<!DOCTYPE html>
+	<html lang="en">
+	@headerComponent(resource.Title)
+	<body>
+		<div class="container">
+			<h1>{resource.Title}</h1>
+
+			<div x-data={ string(fmt.Sprintf("app('%s')", resource.Name))} >
+
+				<table>
+					<thead>
+						<tr>
+							for _, fieldName := range resource.FieldsOrder {
+								<th>{resource.Fields[fieldName].Title}</th>
+							}
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+					<template x-for="item in items" :key="item.id">
+						<tr>
+						for _, fieldName := range resource.FieldsOrder {
+							<td x-text={ string(fmt.Sprintf("item.%s", fieldName))}></td>
+						}
+							<td>
+								<button  class="button" @click="openEditModal(item.id)">Edit</button>
+							</td>
+						</tr>
+					</template>
+					// <button  class="button"
+					//                 hx-get="/market_data_statuss/13/edit"
+					//                 hx-target="#modal-container"
+					//                 >Edit</button>
+					</tbody>
+				</table>
+
+				<div x-show="isModalOpen" class="modal" style="display: none;">
+					<div class="modal-content">
+						<span class="close" x-on:click="closeModal()">&times;</span>
+						
+						<h2>Редактирование {resource.Title}</h2>
+					
+						<template x-if="editableItem">
+							<form @submit.prevent="saveChanges">
+								for _, fieldName := range resource.FieldsOrder {
+									<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
+									<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("editableItem.%s", fieldName))}>
+								}
+						
+								<button type="submit" class="button">Сохранить</button>
+							</form>
+						</template>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<script>
+		function app(resourceName) {
+			return {
+				// Состояние приложения
+				items: [], // Список элементов
+				isModalOpen: false, // Флаг открытия модального окна
+				editableItem: null, // Текущий редактируемый элемент
+
+				// Инициализация: загрузка данных
+				init() {
+				this.fetchItems();
+				},
+
+				// Загрузка списка элементов
+				async fetchItems() {
+				try {
+					const response = await fetch(`/api/resources/${resourceName}`);
+					this.items = await response.json();
+				} catch (error) {
+					console.error('Ошибка при загрузке элементов:', error);
+				}
+				},
+
+				// Открытие модального окна для редактирования
+				async openEditModal(id) {
+				try {
+					const response = await fetch(`/api/resources/${resourceName}?id=eq.${id}`);
+					const items = await response.json();
+					const item = items[0];
+					//console.log(item);
+					this.editableItem = item;
+					this.isModalOpen = true;
+				} catch (error) {
+					console.error('Ошибка при загрузке данных для редактирования:', error);
+				}
+				},
+
+				// Закрытие модального окна
+				closeModal() {
+				this.isModalOpen = false;
+				this.editableItem = null; // Очищаем данные
+				},
+
+				// Сохранение изменений
+				async saveChanges() {
+				try {
+					const response = await fetch(`/api/resources/${resourceName}?id=eq.${this.editableItem.id}`, {
+					method: 'PATCH', // PUT или PATCH, в зависимости от вашего API
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(this.editableItem),
+					});
+
+					if (response.ok) {
+						// Обновляем элемент в списке
+						const index = this.items.findIndex((item) => item.id === this.editableItem.id);
+						if (index !== -1) {
+							this.items[index] = { ...this.editableItem };
+						}
+
+						this.closeModal(); // Закрываем модальное окно
+					} else {
+					console.error('Ошибка при сохранении изменений');
+					}
+				} catch (error) {
+					console.error('Ошибка при отправке данных:', error);
+				}
+				},
+			};
+			}
+		</script>
+	</body>
+	</html>
+}
