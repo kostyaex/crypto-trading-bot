@@ -6,7 +6,6 @@ templ headerComponent(title string) {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>{ title }</title>
 		<script src="//unpkg.com/alpinejs" defer></script>
-		<script src="/assets/js/htmx.min.js"></script>
 		<link rel="stylesheet" href="/assets/styles/app.css">
 	</head>
 }
@@ -19,7 +18,8 @@ templ IndexComponent() {
 		<div class="container">
 			<h1>Dashboard</h1>
 
-			<a href="/resources/market_data_statuss" class="button">market_data_statuss</a>
+			<a href="/resources/market_data_statuss" class="button">Статус загрузки данных</a>
+			<a href="/backtesting" class="button">Бектестинг</a>
 		</div>
 	</body>
 	</html>

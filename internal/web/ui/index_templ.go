@@ -42,7 +42,7 @@ func headerComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"//unpkg.com/alpinejs\" defer></script><script src=\"/assets/js/htmx.min.js\"></script><link rel=\"stylesheet\" href=\"/assets/styles/app.css\"></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"//unpkg.com/alpinejs\" defer></script><link rel=\"stylesheet\" href=\"/assets/styles/app.css\"></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -79,7 +79,7 @@ func IndexComponent() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body><div class=\"container\"><h1>Dashboard</h1><a href=\"/resources/market_data_statuss\" class=\"button\">market_data_statuss</a></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body><div class=\"container\"><h1>Dashboard</h1><a href=\"/resources/market_data_statuss\" class=\"button\">Статус загрузки данных</a> <a href=\"/backtesting\" class=\"button\">Бектестинг</a></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

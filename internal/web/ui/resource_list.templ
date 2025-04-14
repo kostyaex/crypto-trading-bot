@@ -14,7 +14,7 @@ templ ResourceListPage(resource Resource) {
 		<div class="container">
 			<h1>{resource.Title}</h1>
 
-			<div x-data={ string(fmt.Sprintf("app('%s')", resource.Name))} >
+			<div x-data={ string(fmt.Sprintf("resourcesList('%s')", resource.Name))} >
 
 				<table>
 					<thead>
@@ -65,7 +65,7 @@ templ ResourceListPage(resource Resource) {
 
 		</div>
 		<script>
-		function app(resourceName) {
+		function resourcesList(resourceName) {
 			return {
 				// Состояние приложения
 				items: [], // Список элементов
