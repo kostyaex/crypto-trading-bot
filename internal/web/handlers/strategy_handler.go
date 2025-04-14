@@ -29,7 +29,7 @@ func (h *StrategyHandler) GetStrategiesListPage(w http.ResponseWriter, r *http.R
 		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
 	}
 
-	if err = ui.IndexComponent(strategies).Render(r.Context(), w); err != nil {
+	if err = ui.StrategyListComponent(strategies).Render(r.Context(), w); err != nil {
 		h.logger.Errorf("Failed to render index page: %v", err)
 		http.Error(w, "Failed to render page", http.StatusInternalServerError)
 	}

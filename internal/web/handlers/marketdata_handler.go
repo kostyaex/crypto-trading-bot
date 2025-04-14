@@ -4,6 +4,8 @@ import (
 	"crypto-trading-bot/internal/services"
 	"crypto-trading-bot/internal/utils"
 	"crypto-trading-bot/internal/web/ui"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -17,7 +19,11 @@ type MarketDataHandler struct {
 
 // NewMarketDataHandler создает новый экземпляр MarketDataHandler.
 func NewMarketDataHandler(marketDataService services.MarketDataService, exchangeService services.ExchangeService, logger *utils.Logger) *MarketDataHandler {
-	return &MarketDataHandler{marketDataService: marketDataService, exchangeService: exchangeService, logger: logger}
+	return &MarketDataHandler{
+		marketDataService: marketDataService,
+		exchangeService:   exchangeService,
+		logger:            logger,
+	}
 }
 
 // GetMarketData обрабатывает GET-запрос для получения рыночных данных.
@@ -40,7 +46,37 @@ func (h *MarketDataHandler) GetBacktestingPage(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (h *MarketDataHandler) GetRunBacktesting(w http.ResponseWriter, r *http.Request) {
-	now := time.Now()
-	h.marketDataService.RunBacktesting(now, now)
+func (h *MarketDataHandler) PostRunBacktesting(w http.ResponseWriter, r *http.Request) {
+	var requestData struct {
+		Start string `json:"start"`
+		Stop  string `json:"stop"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	layout := "2006-01-02T15:04" // Формат даты и времени
+	start, err := time.Parse(layout, requestData.Start)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	stop, err := time.Parse(layout, requestData.Stop)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println("Start:", start)
+	fmt.Println("Stop:", stop)
+
+	h.marketDataService.RunBacktesting(start, stop)
+
+	w.WriteHeader(http.StatusOK)
 }
+
+//curl -X POST -H "Content-Type: application/json" -d '{"start": "2023-01-01T12:00:00", "stop": "2023-01-01T13:00:00"}' http://localhost:5000/api/runbacktesting

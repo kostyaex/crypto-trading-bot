@@ -21,6 +21,10 @@ type MarketDataService interface {
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
 	RunSchudeler(ctx context.Context)
+	RunBacktesting(startTime, endTime time.Time) error
+	Push(marketData *models.MarketData)
+	Pull(timeLimit time.Time) []*models.MarketDataInterval
+	GetIntervals(marketDataCh <-chan *models.MarketData) <-chan *models.MarketDataInterval
 }
 
 type marketDataService struct {
@@ -39,7 +43,7 @@ func NewMarketDataService(repo *repositories.Repository, logger *utils.Logger, e
 	return &marketDataService{
 		repo:            repo,
 		logger:          logger,
-		timeFrame:       "5m",
+		timeFrame:       "5m", // таймфрем для группировки торговых данных для анализа
 		intervalsOrder:  make([]time.Time, 0),
 		intervals:       make(map[time.Time]*models.MarketDataInterval),
 		exchanges:       exchanges,
@@ -58,8 +62,8 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 		default:
 			// Проверяем время последнего запуска.
 			if time.Now().Add(-1 * time.Second).Before(s.lastTime) {
-				s.logger.Debug("Ждем как пройдет 1 секунда с последнего запуска\n")
-				time.Sleep(1 * time.Second)
+				s.logger.Debug("Ждем как пройдет 300 секунда с последнего запуска\n")
+				time.Sleep(300 * time.Second)
 				continue
 			}
 			//s.logger.Debug("LoadData\n")
@@ -70,16 +74,16 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 }
 
 // добавить загруженные данные. При этом происходит группировка по интервалам.
-func (s *marketDataService) Push(marketData models.MarketData) {
+func (s *marketDataService) Push(marketData *models.MarketData) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	startTime, endTime, _, _ := GetIntervalBounds(marketData.Timestamp, s.timeFrame)
+	startTime, endTime, _, _ := utils.GetIntervalBounds(marketData.Timestamp, s.timeFrame)
 	if _, exists := s.intervals[startTime]; !exists {
 		s.intervals[startTime] = &models.MarketDataInterval{
 			Start:   startTime,
 			End:     endTime,
-			Records: make([]models.MarketData, 0),
+			Records: make([]*models.MarketData, 0),
 		}
 		s.intervalsOrder = append(s.intervalsOrder, marketData.Timestamp)
 	}
@@ -87,18 +91,19 @@ func (s *marketDataService) Push(marketData models.MarketData) {
 
 }
 
-func (s *marketDataService) Pull(timeLimit time.Time) []models.MarketDataInterval {
+// Получить сгрупированные по интервалам данные
+func (s *marketDataService) Pull(timeLimit time.Time) []*models.MarketDataInterval {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var completed []models.MarketDataInterval
+	var completed []*models.MarketDataInterval
 	var newOrder []time.Time
 
 	// Итерация по сохранённому порядку
 	for _, start := range s.intervalsOrder {
 		group, exists := s.intervals[start]
 		if exists && timeLimit.After(group.End) {
-			completed = append(completed, *group)
+			completed = append(completed, group)
 			delete(s.intervals, start)
 		} else {
 			newOrder = append(newOrder, start)
@@ -108,6 +113,51 @@ func (s *marketDataService) Pull(timeLimit time.Time) []models.MarketDataInterva
 	s.intervalsOrder = newOrder // Обновление списка ключей
 
 	return completed
+}
+
+// Разбивает поток биржевых данных на интервалы по timeFrame
+func (s *marketDataService) GetIntervals(marketDataCh <-chan *models.MarketData) <-chan *models.MarketDataInterval {
+	intervals := make(chan *models.MarketDataInterval)
+
+	var timeMarker time.Time
+
+	go func() {
+
+		var currentInterval *models.MarketDataInterval
+
+		for marketData := range marketDataCh {
+			startTime, endTime, _, _ := utils.GetIntervalBounds(marketData.Timestamp, s.timeFrame)
+
+			if startTime.After(timeMarker) {
+				// вышли за границу текущего интервала
+
+				// текущий интервал сбрасываем в канал
+				if currentInterval != nil && currentInterval.PreviousInterval != nil {
+					intervals <- currentInterval
+				}
+
+				// формируем новый интервал
+				currentInterval = &models.MarketDataInterval{
+					Start:            startTime,
+					End:              endTime,
+					Records:          make([]*models.MarketData, 0),
+					PreviousInterval: currentInterval,
+				}
+			}
+
+			timeMarker = startTime
+
+			currentInterval.Records = append(currentInterval.Records, marketData)
+		}
+
+		if currentInterval != nil && currentInterval.PreviousInterval != nil {
+			intervals <- currentInterval
+		}
+
+		close(intervals)
+	}()
+
+	return intervals
 }
 
 // Загружает пары по интервалам указанным в таблице marketdataStatuses.
@@ -316,76 +366,33 @@ func (s *marketDataService) ClusterMarketData(data []*models.MarketData, numClus
 
 //------------------------------------------------------------------
 
-// Возвращает начало временного интервала для заданного времени и типа интервала
-func GetIntervalBounds(t time.Time, interval string) (start, end, nextStart time.Time, err error) {
+func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
-	// Рассчитываем начало интервала
-	if interval == "1M" {
-		start = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
-		nextStart = time.Date(t.Year(), t.Month()+1, 1, 0, 0, 0, 0, t.Location())
-		end = nextStart.Add(-time.Nanosecond) // Конец интервала
-		return
-	} else if interval == "1d" {
-		start = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-		end = time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 999999999, t.Location())
-		nextDay := t.Add(24 * time.Hour)
-		nextStart = time.Date(nextDay.Year(), nextDay.Month(), nextDay.Day(), 0, 0, 0, 0, t.Location())
-		return
-	} else if interval == "1w" {
-		start, end, nextStart = getWeekBounds(t)
-		return
-	}
-
-	// Парсинг интервала
-	duration, err := parseInterval(interval)
+	// Получить данные за период
+	// надо переделать на функцию получения данных за период
+	marketData, err := s.GetMarketData("BTCUSDT", 100)
 	if err != nil {
-		return
-	}
-	start = t.Truncate(duration)
-	end = start.Add(duration).Add(-time.Nanosecond) // Конец интервала
-	nextStart = start.Add(duration)
-
-	return
-}
-
-// определить границы недели
-func getWeekBounds(t time.Time) (start, end, nextStart time.Time) {
-	year, week := t.ISOWeek()
-	firstDay := time.Date(year, 1, 1, 0, 0, 0, 0, t.Location())
-	daysSinceEpoch := int(firstDay.Weekday()) - 1
-	if daysSinceEpoch < 0 {
-		daysSinceEpoch += 7
-	}
-	start = firstDay.AddDate(0, 0, (week-1)*7-daysSinceEpoch)
-	end = start.Add(7 * 24 * time.Hour).Add(-time.Nanosecond)
-	nextStart = start.Add(7 * 24 * time.Hour)
-	return
-}
-
-// Парсинг строки интервала в time.Duration
-func parseInterval(interval string) (time.Duration, error) {
-	// Словарь интервалов
-	intervals := map[string]time.Duration{
-		"1s":  time.Second,
-		"1m":  time.Minute,
-		"3m":  3 * time.Minute,
-		"5m":  5 * time.Minute,
-		"15m": 15 * time.Minute,
-		"30m": 30 * time.Minute,
-		"1h":  time.Hour,
-		"4h":  4 * time.Hour,
-		"6h":  6 * time.Hour,
-		"8h":  8 * time.Hour,
-		"12h": 12 * time.Hour,
-		"1d":  24 * time.Hour,
-		"3d":  72 * time.Hour,
-		"1w":  168 * time.Hour,
-		//"1M":  30 * 24 * time.Hour, // Примерное значение для месяца
+		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
+		return err
 	}
 
-	// Проверка допустимых значений
-	if duration, ok := intervals[interval]; ok {
-		return duration, nil
+	fmt.Printf("marketData: %d\n", len(marketData))
+
+	// Передаем тестовые данные в канал биржевых данных
+	marketDataCh := make(chan *models.MarketData)
+	go func() {
+		for _, marketDataItem := range marketData {
+			marketDataCh <- marketDataItem
+		}
+		close(marketDataCh)
+	}()
+
+	intervalsCh := s.GetIntervals(marketDataCh)
+
+	// получаем интервалы из канала
+	for interval := range intervalsCh {
+		fmt.Printf("Interval: %v - %d\n", interval.Start, len(interval.Records))
 	}
-	return 0, fmt.Errorf("недопустимый интервал: %s", interval)
+
+	return nil
 }

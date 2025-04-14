@@ -1,0 +1,64 @@
+package ui
+
+templ BacktestingPage() {
+    <!DOCTYPE html>
+	<html lang="en">
+	@headerComponent("Backtesting")
+	<body>
+		<div x-data="backtesting()" class="container">
+            <h1>Бектестинг</h1>
+            <form @submit.prevent="submit">
+                <label for="datetime1">Начало периода:</label>
+                <input x-model="form.start" type="datetime-local" id="datetime1" name="datetime1" required>
+                <br><br>
+                <label for="datetime2">Конец периода:</label>
+                <input x-model="form.stop" type="datetime-local" id="datetime2" name="datetime2" required>
+                <br><br>
+                <button type="submit">Подтвердить</button>
+            </form>
+            <p x-text="form.status"></p>
+        </div>
+        <script>
+
+        function convertDateToInputFormat(date) {
+            let year = date.getFullYear();
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let day = String(date.getDate()).padStart(2, '0');
+            let hours = String(date.getHours()).padStart(2, '0');
+            let minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+		function backtesting() {
+            const currentTime = new Date();
+			return {
+                form: {
+                    start: convertDateToInputFormat(currentTime),
+                    stop: convertDateToInputFormat(currentTime),
+                    status: ""
+                },
+				async submit() {
+				try {
+					const response = await fetch('/api/runbacktesting', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(this.form),
+					});
+
+					if (response.ok) {
+						this.status = "Команда отправлена"
+					} else {
+					    this.status = 'Ошибка при сохранении изменений';
+					}
+				} catch (error) {
+                    this.status = 'Ошибка при отправке данных:'+error
+					console.error('Ошибка при отправке данных:', error);
+				}
+				},
+			};
+			}
+		</script>
+	</body>
+	</html>
+}

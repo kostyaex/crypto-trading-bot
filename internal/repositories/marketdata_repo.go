@@ -101,23 +101,18 @@ func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*model
         SELECT exchange, symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp
         FROM market_data
         WHERE symbol = $1
-        ORDER BY timestamp DESC
+        ORDER BY timestamp ASC
         LIMIT $2;
     `
 
 	var marketData []*models.MarketData
 	err := r.db.Select(&marketData, query, symbol, limit)
 	if err != nil {
-		r.logger.Errorf("Failed to get market data for symbol %s: %v", symbol, err)
+		r.logger.Errorf("Ошибка получения market_data: %v", err)
 		return nil, err
 	}
 
-	// // Сортируем данные по возрастанию времени
-	// sort.Slice(marketData, func(i, j int) bool {
-	// 	return marketData[i].Timestamp.Before(marketData[j].Timestamp)
-	// })
-
-	r.logger.Infof("Market data retrieved for symbol %s: %v", symbol, marketData)
+	//r.logger.Infof("Market data retrieved for symbol %s: %v", symbol, marketData)
 	return marketData, nil
 }
 
