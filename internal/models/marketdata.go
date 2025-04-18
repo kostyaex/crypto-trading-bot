@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // интервал с указанием таймфрейма и начала соответствующего отрезка
 type MarketDataInterval struct {
@@ -43,4 +46,27 @@ type ClusterData struct {
 	IsBuySell    bool      `db:"is_buysell"`
 	ClusterPrice float64   `db:"buy_cluster"`
 	Volume       float64   `db:"volume"`
+}
+
+type MarketWave struct {
+	Start  time.Time
+	Stop   time.Time
+	Symbol string
+	//IsBuySell        bool      `db:"is_buysell"`
+	//ClusterPrice float64
+	Points []MarketWavePoint
+	Volume float64
+}
+
+type MarketWavePoint struct {
+	Timestamp time.Time
+	Price     float64
+}
+
+func (wave *MarketWave) String() string {
+	if len(wave.Points) == 0 {
+		return fmt.Sprintf("%s", wave.Start.Format("02.01.2006 15:04:05"))
+	}
+
+	return fmt.Sprintf("%s-%f", wave.Start.Format("02.01.2006 15:04:05"), wave.Points[0].Price)
 }

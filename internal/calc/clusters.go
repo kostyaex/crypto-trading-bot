@@ -8,6 +8,7 @@ import (
 type WeightedPoint struct {
 	Value  float64
 	Weight float64
+	//Cluster int
 }
 
 type Cluster struct {
@@ -88,8 +89,14 @@ func KMeansWeighted1D(points []WeightedPoint, k int, maxIterations int) []Cluste
 	}
 
 	// Формирование финальных кластеров
+	filterdClusters := make([]Cluster, 0)
 	for i := range clusters {
 		clusters[i].Center = centers[i]
+		if math.IsNaN(clusters[i].Center) || clusters[i].Center == 0 {
+			continue
+		}
+		filterdClusters = append(filterdClusters, clusters[i])
 	}
-	return clusters
+
+	return filterdClusters
 }
