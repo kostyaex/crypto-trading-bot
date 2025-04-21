@@ -280,7 +280,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 	// Получить данные за период
 	// надо переделать на функцию получения данных за период
-	marketData, err := s.GetMarketData("BTCUSDT", 1000)
+	marketData, err := s.GetMarketData("BTCUSDT", 10)
 	if err != nil {
 		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
 		return err
@@ -302,8 +302,8 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 	// Разбивка данных биржи по блокам (интервалам)
 
 	intervalsCh := make(chan []*models.MarketData) //s.GetIntervals(marketDataCh)
-	blockSize := 60                                // 60 - для минутных данных биржи получается группировка по часам
-	overlap := 30                                  // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
+	blockSize := 3                                 // 60 - для минутных данных биржи получается группировка по часам
+	overlap := 2                                   // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
 
 	go utils.SplitChannelWithOverlap(marketDataCh, blockSize, overlap, intervalsCh)
 
@@ -322,7 +322,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 		intervalStart := interval[0].Timestamp
 
-		fmt.Printf("Interval: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
+		fmt.Printf("Блок: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
 
 		// Подготовка данных для кластеризации
 		// !! Здесь надо сворачивать объемы с одинаковой ценой в одну точку
@@ -336,7 +336,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 		}
 
 		// Кластеризация
-		numClusters := 3
+		numClusters := 1
 		clusters := calc.KMeansWeighted1D(append(points, pointsPreviousInterval...), numClusters, 100)
 
 		// Для понимания алгоритма:
@@ -360,7 +360,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 		//     Ключевым здесь будет соответсвие - pricesToWave
 
 		// Определим, в каких кластерах были цены из прошлого интервала.
-		clustersWithPricecFromPrevIntervals := make(map[*calc.Cluster]bool) // в ресурсе храним объем
+		clustersWithPricecFromPrevIntervals := make(map[float64]*models.MarketWave) // ключ - цена кластера
 		//clusterToWave := make(map[string]float64)                              // на одну волну может попасть несколько кластеров, надо выбрать больший по объему
 
 		// Обходим уже сформированные на прошлом шаге волны, перебираем цены в каждой
@@ -382,10 +382,11 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 			}
 
 			fmt.Printf("clusterValue for wave %s:\n", wave.String())
+			// Здесь собственно подбор волны для кластера
 			for cluster, value := range clusterValue {
 				fav := ""
 				if cluster == maxCluster {
-					clustersWithPricecFromPrevIntervals[cluster] = true
+					clustersWithPricecFromPrevIntervals[cluster.Center] = wave // для этого кластера не будет создаваться волна
 					wave.Points = append(wave.Points, models.MarketWavePoint{
 						Timestamp: intervalStart,
 						Price:     cluster.Center,
@@ -401,11 +402,13 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 		clear(waveToPrices)
 
 		// 2.1 Выбираем кластеры, которые не попали в clustersWithPricecFromPrevIntervals
-		clustersForNewWaves := make([]*calc.Cluster, 0)
 		for _, cluster := range clusters {
-			if _, ok := clustersWithPricecFromPrevIntervals[&cluster]; !ok {
-				clustersForNewWaves = append(clustersForNewWaves, &cluster)
-				wave := &models.MarketWave{
+			var wave *models.MarketWave
+			if _, ok := clustersWithPricecFromPrevIntervals[cluster.Center]; ok {
+				wave = clustersWithPricecFromPrevIntervals[cluster.Center]
+			} else {
+
+				wave = &models.MarketWave{
 					Start: intervalStart,
 					Stop:  intervalStart,
 					//Symbol: interval.Symbol,
@@ -417,15 +420,22 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 				}
 				waves = append(waves, wave)
 
-				// заполняем соответствие для следующего интервала
-				for _, point := range cluster.Points {
-					//pricesToWave[point.Value] = wave
-					if waveToPrices[wave] == nil {
-						waveToPrices[wave] = make([]calc.WeightedPoint, 0)
-					}
-					waveToPrices[wave] = append(waveToPrices[wave], point)
-				}
 			}
+
+			// заполняем соответствие для следующего интервала
+			for _, point := range points {
+				// фильтр точек текущего блока (points) по выбранному кластеру
+				if c, ok := pricesToCluster[point.Value]; !ok || c.Center != cluster.Center {
+					continue
+				}
+
+				//pricesToWave[point.Value] = wave
+				if waveToPrices[wave] == nil {
+					waveToPrices[wave] = make([]calc.WeightedPoint, 0)
+				}
+				waveToPrices[wave] = append(waveToPrices[wave], point)
+			}
+
 		}
 
 	}
