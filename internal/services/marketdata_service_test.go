@@ -1,7 +1,6 @@
 package services
 
 import (
-	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 	"fmt"
 	"testing"
@@ -33,47 +32,5 @@ func Test_marketDataService_RunBacktesting(t *testing.T) {
 	err := setup.marketDataService.RunBacktesting(startTime, startTime)
 	if err != nil {
 		t.Errorf("Ошибка: %s", err)
-	}
-}
-
-func Test_marketDataService_GetIntervals(t *testing.T) {
-
-	setup := NewTestSetup()
-	marketDataCh := make(chan *models.MarketData)
-	//defer close(marketDataCh)
-
-	now := time.Now().Truncate(5 * time.Minute)
-
-	marketData := []*models.MarketData{
-		&models.MarketData{
-			Timestamp: now.Add(-10 * time.Minute),
-			Exchange:  "binance",
-			Symbol:    "BTCUSDT",
-		},
-		&models.MarketData{
-			Timestamp: now.Add(-7 * time.Minute),
-			Exchange:  "binance",
-			Symbol:    "BTCUSDT",
-		},
-		&models.MarketData{
-			Timestamp: now.Add(-3 * time.Minute),
-			Exchange:  "binance",
-			Symbol:    "BTCUSDT",
-		},
-	}
-
-	// Передаем тестовые данные в канал биржевых данных
-	go func() {
-		for _, marketDataItem := range marketData {
-			marketDataCh <- marketDataItem
-		}
-		close(marketDataCh)
-	}()
-
-	intervalsCh := setup.marketDataService.GetIntervals(marketDataCh)
-
-	// получаем интервалы из канала
-	for interval := range intervalsCh {
-		fmt.Printf("Interval: %v - %d\n", interval.Start, len(interval.Records))
 	}
 }

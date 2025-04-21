@@ -5,16 +5,6 @@ import (
 	"time"
 )
 
-// интервал с указанием таймфрейма и начала соответствующего отрезка
-type MarketDataInterval struct {
-	TimeFrame        string
-	Symbol           string
-	Start            time.Time
-	End              time.Time
-	Records          []*MarketData
-	PreviousInterval *MarketDataInterval
-}
-
 // MarketDataStatus представляет модель MarketDataStatus.
 type MarketDataStatus struct {
 	ID         int       `db:"id"`

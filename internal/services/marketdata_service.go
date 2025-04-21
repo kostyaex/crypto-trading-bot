@@ -22,9 +22,6 @@ type MarketDataService interface {
 	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
 	RunSchudeler(ctx context.Context)
 	RunBacktesting(startTime, endTime time.Time) error
-	Push(marketData *models.MarketData)
-	Pull(timeLimit time.Time) []*models.MarketDataInterval
-	GetIntervals(marketDataCh <-chan *models.MarketData) <-chan *models.MarketDataInterval
 }
 
 type WavesCollection struct {
@@ -39,9 +36,6 @@ type marketDataService struct {
 	exchanges       []exchange.Exchange
 	exchangeService ExchangeService
 	mu              sync.Mutex
-	timeFrame       string                                   // интервал для группировки данных
-	intervalsOrder  []time.Time                              // Список ключей в порядке добавления
-	intervals       map[time.Time]*models.MarketDataInterval // соответствие для хранения загруженных интервалов
 	lastTime        time.Time
 }
 
@@ -49,9 +43,6 @@ func NewMarketDataService(repo *repositories.Repository, logger *utils.Logger, e
 	return &marketDataService{
 		repo:            repo,
 		logger:          logger,
-		timeFrame:       "1h", // таймфрем для группировки торговых данных для анализа
-		intervalsOrder:  make([]time.Time, 0),
-		intervals:       make(map[time.Time]*models.MarketDataInterval),
 		exchanges:       exchanges,
 		exchangeService: exchangeService,
 	}
@@ -77,93 +68,6 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 			s.lastTime = time.Now()
 		}
 	}
-}
-
-// добавить загруженные данные. При этом происходит группировка по интервалам.
-func (s *marketDataService) Push(marketData *models.MarketData) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	startTime, endTime, _, _ := utils.GetIntervalBounds(marketData.Timestamp, s.timeFrame)
-	if _, exists := s.intervals[startTime]; !exists {
-		s.intervals[startTime] = &models.MarketDataInterval{
-			Start:   startTime,
-			End:     endTime,
-			Records: make([]*models.MarketData, 0),
-		}
-		s.intervalsOrder = append(s.intervalsOrder, marketData.Timestamp)
-	}
-	s.intervals[startTime].Records = append(s.intervals[startTime].Records, marketData)
-
-}
-
-// Получить сгрупированные по интервалам данные
-func (s *marketDataService) Pull(timeLimit time.Time) []*models.MarketDataInterval {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	var completed []*models.MarketDataInterval
-	var newOrder []time.Time
-
-	// Итерация по сохранённому порядку
-	for _, start := range s.intervalsOrder {
-		group, exists := s.intervals[start]
-		if exists && timeLimit.After(group.End) {
-			completed = append(completed, group)
-			delete(s.intervals, start)
-		} else {
-			newOrder = append(newOrder, start)
-		}
-	}
-
-	s.intervalsOrder = newOrder // Обновление списка ключей
-
-	return completed
-}
-
-// Разбивает поток биржевых данных на интервалы по timeFrame
-func (s *marketDataService) GetIntervals(marketDataCh <-chan *models.MarketData) <-chan *models.MarketDataInterval {
-	intervals := make(chan *models.MarketDataInterval)
-
-	var timeMarker time.Time
-
-	go func() {
-
-		var currentInterval *models.MarketDataInterval
-
-		for marketData := range marketDataCh {
-			startTime, endTime, _, _ := utils.GetIntervalBounds(marketData.Timestamp, s.timeFrame)
-
-			if startTime.After(timeMarker) {
-				// вышли за границу текущего интервала
-
-				// текущий интервал сбрасываем в канал
-				if currentInterval != nil && currentInterval.PreviousInterval != nil {
-					intervals <- currentInterval
-				}
-
-				// формируем новый интервал
-				currentInterval = &models.MarketDataInterval{
-					Start:            startTime,
-					End:              endTime,
-					Records:          make([]*models.MarketData, 0),
-					PreviousInterval: currentInterval,
-				}
-			}
-
-			timeMarker = startTime
-
-			currentInterval.Records = append(currentInterval.Records, marketData)
-		}
-
-		if currentInterval != nil && currentInterval.PreviousInterval != nil {
-			intervals <- currentInterval
-		}
-
-		close(intervals)
-	}()
-
-	return intervals
 }
 
 // Загружает пары по интервалам указанным в таблице marketdataStatuses.
@@ -493,36 +397,6 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 			fmt.Println()
 		}
 
-		// for _, point := range pointsPreviousInterval {
-		// 	if cluster, ok := pricesToCluster[point.Value]; ok {
-
-		// 		// if wave, ok3 := pricesToWave[point.Value]; ok3 {
-		// 		// 	key := fmt.Sprintf("%f-%s-%f", cluster.Center, wave.Start.Format("02.01.2006 15:04:05"), wave.Points[0].Price)
-		// 		// 	clusterToWave[key] = clusterToWave[key] + point.Weight
-		// 		// }
-
-		// 		// if _, ok2 := clustersWithPricecFromPrevIntervals[cluster]; !ok2 { // делаем проверку, может уже добавляли по другой цене
-		// 		// 	clustersWithPricecFromPrevIntervals[cluster] = point.Value
-
-		// 		// }
-		// 		clustersWithPricecFromPrevIntervals[cluster] = clustersWithPricecFromPrevIntervals[cluster] + point.Value
-		// 	}
-		// }
-		// fmt.Printf("clustersWithPricecFromPrevIntervals:\n")
-		// for key, value := range clustersWithPricecFromPrevIntervals {
-		// 	fmt.Printf("%f - %10.2f\n", key.Center, value)
-		// }
-		// fmt.Println()
-
-		// // находим волну и добавляем туда цену кластера
-		// if wave, ok3 := pricesToWave[point.Value]; ok3 {
-		// 	wave.Points = append(wave.Points, models.MarketWavePoint{
-		// 		Timestamp: interval.Start,
-		// 		Price:     cluster.Center,
-		// 	})
-		// 	wave.Stop = interval.Start
-		// }
-
 		//clear(pricesToWave) // соответствие уже использовано, очищаем, чтобы заполнить данными текущего интервала
 		clear(waveToPrices)
 
@@ -554,44 +428,6 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 			}
 		}
 
-		//controlCount := 0
-		//for _, cluster := range clusters {
-		// if math.IsNaN(cluster.Center) || cluster.Center == 0 {
-		// 	continue
-		// }
-
-		// controlCount += len(cluster.Points)
-		// fmt.Printf("Cluster: %-20f - %-3d\n", cluster.Center, len(cluster.Points))
-
-		// for w, _ := range wavesForCluster {
-		// 	fmt.Printf("Wave: %v - %f\n", w.Start, w.ClusterPrice)
-		// }
-
-		//
-
-		// // Точки кластера должны распределить в существующие волны либо создать новую волну.
-
-		// // определяем по точкам волны, в которых они были
-		// wavesForCluster := make(map[*models.MarketWave]bool, 0)
-		// for _, point := range cluster.Points {
-		// 	if w, ok := priceToWave[point.Value]; ok {
-		// 		wavesForCluster[w] = true
-		// 	}
-		// }
-
-		// clear(priceToWave)
-
-		// //
-
-		// // запоминаем связку цены с волной для следующего шага
-
-		// for _, point := range cluster.Points {
-		// 	priceToWave[point.Value] = &wave
-		// }
-
-		//}
-
-		//fmt.Printf("Контрольное количество: %d\n", controlCount)
 	}
 
 	fmt.Printf("Waves: %d\n", len(waves))
@@ -605,51 +441,3 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 	return nil
 }
-
-// // Обработать точки нового шага.
-// func (wavesCollection *WavesCollection) commitPoints(points []calc.WeightedPoint, startTime time.Time) {
-
-// 	if wavesCollection.Wawes == nil {
-// 		wavesCollection.Wawes = make([]*models.MarketWave, 0)
-// 		wavesCollection.priceToWave = make(map[float64]*models.MarketWave, 0)
-// 	}
-
-// 	var wave *models.MarketWave
-
-// 	// Если хоть одна цена кластера попадает в существующую волну - относим кластер к этой волне
-// 	for _, point := range points {
-// 		if w, ok := wavesCollection.priceToWave[point.Value]; !ok {
-// 			wavesCollection.priceToWave[point.Value] = &models.MarketWave{
-// 				Start: startTime,
-// 				//Symbol:       interval.Symbol,
-// 			}
-// 		}
-// 	}
-
-// 	// предыдущие соответствия не нужны - очищаем. Ниже заполним.
-// 	//clear(wavesCollection.priceToWave)
-
-// 	// Формируем новую волну
-// 	if wave != nil {
-// 		wave =
-// 		wavesCollection.Wawes = append(wavesCollection.Wawes, wave)
-// 	}
-
-// 	// заполняем соответствия цен и волн для следующего шага
-// 	for _, point := range cluster.Points {
-// 		if w, ok := wavesCollection.priceToWave[point.Value]; !ok {
-// 			wavesCollection.priceToWave[point.Value] = w
-// 		}
-// 	}
-
-// 	for _, point := range cluster.Points {
-// 		//priceToWave[point.Value] = &wave
-// 		wavesCollection.ConnectionPoints = append(wavesCollection.ConnectionPoints, point)
-// 	}
-
-// 	// controlCount += len(cluster.Points)
-// 	// fmt.Printf("Cluster: %f - %d\n", cluster.Center, len(cluster.Points))
-// 	// for w, _ := range wavesForCluster {
-// 	// 	fmt.Printf("Wave: %v - %f\n", w.Start, w.ClusterPrice)
-// 	// }
-// }
