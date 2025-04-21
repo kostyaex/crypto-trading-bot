@@ -395,24 +395,39 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 	//-------------------------------------------------------------------
 
-	intervalsCh := s.GetIntervals(marketDataCh)
+	// Разбивка данных биржи по блокам (интервалам)
+
+	intervalsCh := make(chan []*models.MarketData) //s.GetIntervals(marketDataCh)
+	blockSize := 60                                // 60 - для минутных данных биржи получается группировка по часам
+	overlap := 30                                  // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
+
+	go utils.SplitChannelWithOverlap(marketDataCh, blockSize, overlap, intervalsCh)
 
 	waves := make([]*models.MarketWave, 0)
 	//pricesToWave := make(map[float64]*models.MarketWave, 0)           // определение волны по цене
 	waveToPrices := make(map[*models.MarketWave][]calc.WeightedPoint) // обратное соответствие
 
 	// получаем интервалы из канала
+	var previousInterval []*models.MarketData
 	for interval := range intervalsCh {
-		fmt.Printf("Interval: %v - %d\n", interval.Start, len(interval.Records)+len(interval.PreviousInterval.Records))
+
+		if len(previousInterval) == 0 {
+			previousInterval = interval
+			continue
+		}
+
+		intervalStart := interval[0].Timestamp
+
+		fmt.Printf("Interval: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
 
 		// Подготовка данных для кластеризации
 		// !! Здесь надо сворачивать объемы с одинаковой ценой в одну точку
-		points := make([]calc.WeightedPoint, len(interval.Records))
-		pointsPreviousInterval := make([]calc.WeightedPoint, len(interval.PreviousInterval.Records))
-		for n, d := range interval.Records {
+		points := make([]calc.WeightedPoint, len(interval))
+		pointsPreviousInterval := make([]calc.WeightedPoint, len(previousInterval))
+		for n, d := range interval {
 			points[n] = calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume}
 		}
-		for n, d := range interval.PreviousInterval.Records {
+		for n, d := range previousInterval {
 			pointsPreviousInterval[n] = calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume}
 		}
 
@@ -468,7 +483,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 				if cluster == maxCluster {
 					clustersWithPricecFromPrevIntervals[cluster] = true
 					wave.Points = append(wave.Points, models.MarketWavePoint{
-						Timestamp: interval.Start,
+						Timestamp: intervalStart,
 						Price:     cluster.Center,
 					})
 					fav = "*"
@@ -517,13 +532,13 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 			if _, ok := clustersWithPricecFromPrevIntervals[&cluster]; !ok {
 				clustersForNewWaves = append(clustersForNewWaves, &cluster)
 				wave := &models.MarketWave{
-					Start:  interval.Start,
-					Stop:   interval.Start,
-					Symbol: interval.Symbol,
+					Start: intervalStart,
+					Stop:  intervalStart,
+					//Symbol: interval.Symbol,
 					Points: make([]models.MarketWavePoint, 1),
 				}
 				wave.Points[0] = models.MarketWavePoint{
-					Timestamp: interval.Start,
+					Timestamp: intervalStart,
 					Price:     cluster.Center,
 				}
 				waves = append(waves, wave)

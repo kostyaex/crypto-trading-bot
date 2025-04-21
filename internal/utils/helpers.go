@@ -120,3 +120,44 @@ func parseInterval(interval string) (time.Duration, error) {
 }
 
 // -------------------------------------------------------------
+
+// Функция для разбиения данных из канала на блоки с перекрытием
+func SplitChannelWithOverlap[T any](inputChan <-chan T, blockSize int, overlap int, outputChan chan<- []T) {
+	var buffer []T // Буфер для хранения текущего блока
+	var block []T  // Текущий блок для отправки
+
+	for {
+		// Читаем один элемент из входного канала
+		element, ok := <-inputChan
+		if !ok {
+			// Если канал закрыт, проверяем, есть ли оставшиеся данные в буфере
+			if len(buffer) >= overlap {
+				// Отправляем оставшийся блок (всю оставшуюся часть буфера)
+				//outputChan <- buffer[len(buffer)-min(len(buffer), blockSize):]
+
+				// Если канал закрыт, проверяем, есть ли оставшиеся данные в буфере
+				// Но мы не отправляем остатки, если они не составляют полный блок
+				close(outputChan) // Закрываем выходной канал
+				return
+			}
+			close(outputChan) // Закрываем выходной канал
+			return
+		}
+
+		// Добавляем элемент в буфер
+		buffer = append(buffer, element)
+
+		// Проверяем, достаточно ли элементов для формирования нового блока
+		if len(buffer) >= blockSize {
+			// Собираем текущий блок
+			block = make([]T, blockSize)
+			copy(block, buffer[len(buffer)-blockSize:])
+
+			// Отправляем блок в выходной канал
+			outputChan <- block
+
+			// Обновляем буфер, оставляя только последние `overlap` элементов
+			buffer = buffer[len(buffer)-overlap:]
+		}
+	}
+}
