@@ -92,7 +92,7 @@ func KMeansWeighted1D(points []WeightedPoint, k int, maxIterations int) []Cluste
 	filterdClusters := make([]Cluster, 0)
 	for i := range clusters {
 		clusters[i].Center = centers[i]
-		if math.IsNaN(clusters[i].Center) || clusters[i].Center == 0 {
+		if math.IsNaN(clusters[i].Center) || clusters[i].Center == 0 || len(clusters[i].Points) == 0 {
 			continue
 		}
 		filterdClusters = append(filterdClusters, clusters[i])

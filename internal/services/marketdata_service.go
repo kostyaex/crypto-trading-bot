@@ -7,7 +7,9 @@ import (
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -280,13 +282,13 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 	// Получить данные за период
 	// надо переделать на функцию получения данных за период
-	marketData, err := s.GetMarketData("BTCUSDT", 10)
+	marketData, err := s.GetMarketData("BTCUSDT", 1000)
 	if err != nil {
 		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
 		return err
 	}
 
-	fmt.Printf("marketData: %d\n", len(marketData))
+	s.logger.Debugf("marketData: %d\n", len(marketData))
 
 	// Передаем тестовые данные в канал биржевых данных
 	marketDataCh := make(chan *models.MarketData)
@@ -302,8 +304,8 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 	// Разбивка данных биржи по блокам (интервалам)
 
 	intervalsCh := make(chan []*models.MarketData) //s.GetIntervals(marketDataCh)
-	blockSize := 3                                 // 60 - для минутных данных биржи получается группировка по часам
-	overlap := 2                                   // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
+	blockSize := 5                                 // 60 - для минутных данных биржи получается группировка по часам
+	overlap := 4                                   // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
 
 	go utils.SplitChannelWithOverlap(marketDataCh, blockSize, overlap, intervalsCh)
 
@@ -322,7 +324,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 		intervalStart := interval[0].Timestamp
 
-		fmt.Printf("Блок: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
+		s.logger.Debugf("Блок: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
 
 		// Подготовка данных для кластеризации
 		// !! Здесь надо сворачивать объемы с одинаковой ценой в одну точку
@@ -336,7 +338,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 		}
 
 		// Кластеризация
-		numClusters := 1
+		numClusters := 5
 		clusters := calc.KMeansWeighted1D(append(points, pointsPreviousInterval...), numClusters, 100)
 
 		// Для понимания алгоритма:
@@ -381,7 +383,7 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 				}
 			}
 
-			fmt.Printf("clusterValue for wave %s:\n", wave.String())
+			s.logger.Debugf("clusterValue for wave %p - %s:\n", wave, wave.String())
 			// Здесь собственно подбор волны для кластера
 			for cluster, value := range clusterValue {
 				fav := ""
@@ -393,9 +395,9 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 					})
 					fav = "*"
 				}
-				fmt.Printf("%f - %10.2f %s\n", cluster.Center, value, fav)
+				s.logger.Debugf("%f - %10.2f %s\n", cluster.Center, value, fav)
 			}
-			fmt.Println()
+			s.logger.Debugln()
 		}
 
 		//clear(pricesToWave) // соответствие уже использовано, очищаем, чтобы заполнить данными текущего интервала
@@ -441,13 +443,71 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 	}
 
 	fmt.Printf("Waves: %d\n", len(waves))
+	//printWavesStat(waves)
+	saveWaves(waves)
+
+	return nil
+}
+
+// Выводим статистику по полученным волнам
+func printWaves(waves []*models.MarketWave) {
+	fmt.Printf("Waves: %d\n", len(waves))
 	timeFormat := "02.01.2006 15:04:05"
 	for _, wave := range waves {
-		fmt.Printf("Wave: %s - %s\n", wave.Start.Format(timeFormat), wave.Stop.Format(timeFormat))
+		fmt.Printf("Wave: %p - %s - %s\n", wave, wave.Start.Format(timeFormat), wave.Stop.Format(timeFormat))
 		for _, point := range wave.Points {
 			fmt.Printf(" - %s %f\n", point.Timestamp.Format(timeFormat), point.Price)
 		}
+		fmt.Println()
+	}
+}
+
+// Выводим статистику по полученным волнам
+func printWavesStat(waves []*models.MarketWave) {
+
+	var maxLen int // максимальная длина волны
+
+	//timeFormat := "02.01.2006 15:04:05"
+
+	for _, wave := range waves {
+		waveLen := len(wave.Points)
+		if waveLen > maxLen {
+			maxLen = waveLen
+		}
+		//fmt.Printf("Wave: %p - %s - %s\n", wave, wave.Start.Format(timeFormat), wave.Stop.Format(timeFormat))
+		// for _, point := range wave.Points {
+		// 	fmt.Printf(" - %s %f\n", point.Timestamp.Format(timeFormat), point.Price)
+		// }
+		//fmt.Println()
 	}
 
-	return nil
+	fmt.Printf("Waves: %d\n", len(waves))
+	fmt.Printf("maxLen: %d\n", maxLen)
+	fmt.Println()
+}
+
+func saveWaves(waves []*models.MarketWave) {
+	// Кодируем массив структур в JSON
+	jsonData, err := json.Marshal(waves)
+	if err != nil {
+		fmt.Println("Ошибка кодирования в JSON:", err)
+		return
+	}
+
+	// Записываем JSON в файл
+	filename := "../../data/waves.json"
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Println("Ошибка создания файла:", err)
+		return
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonData)
+	if err != nil {
+		fmt.Println("Ошибка записи в файл:", err)
+		return
+	}
+
+	fmt.Printf("JSON записан в файл %s", filename)
 }
