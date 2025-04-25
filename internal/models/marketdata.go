@@ -39,18 +39,20 @@ type ClusterData struct {
 }
 
 type MarketWave struct {
-	Start  time.Time
-	Stop   time.Time
-	Symbol string
+	Start  time.Time `json:"start"`
+	Stop   time.Time `json:"stop"`
+	Symbol string    `json:"symbol"`
 	//IsBuySell        bool      `db:"is_buysell"`
 	//ClusterPrice float64
-	Points []MarketWavePoint
-	Volume float64
+	Points []MarketWavePoint `json:"points"`
 }
 
 type MarketWavePoint struct {
-	Timestamp time.Time
-	Price     float64
+	Timestamp  time.Time `json:"timestamp"`
+	Price      float64   `json:"price"`
+	Volume     float64   `json:"volume"`
+	BuyVolume  float64   `json:"buyvolume"`
+	SellVolume float64   `json:"sellvolume"`
 }
 
 func (wave *MarketWave) String() string {

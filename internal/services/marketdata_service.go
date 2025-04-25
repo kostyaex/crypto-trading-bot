@@ -221,7 +221,10 @@ func (s *marketDataService) ClusterMarketData(data []*models.MarketData, numClus
 	// Подготовка данных для кластеризации
 	points := make([]calc.WeightedPoint, len(data))
 	for _, d := range data {
-		points = append(points, calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume})
+		points = append(points, calc.WeightedPoint{
+			Value:  d.OpenPrice,
+			Weight: d.BuyVolume,
+		})
 	}
 
 	// Кластеризация объемов покупок
@@ -327,14 +330,17 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 		s.logger.Debugf("Блок: %v - %d\n", intervalStart, len(interval)+len(previousInterval))
 
 		// Подготовка данных для кластеризации
-		// !! Здесь надо сворачивать объемы с одинаковой ценой в одну точку
+		// Веса для кластеризации - берем общий объем проаж и покупок
 		points := make([]calc.WeightedPoint, len(interval))
 		pointsPreviousInterval := make([]calc.WeightedPoint, len(previousInterval))
 		for n, d := range interval {
-			points[n] = calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume}
+			points[n] = calc.WeightedPoint{
+				Value:  d.OpenPrice,
+				Weight: d.Volume,
+			}
 		}
 		for n, d := range previousInterval {
-			pointsPreviousInterval[n] = calc.WeightedPoint{Value: d.OpenPrice, Weight: d.BuyVolume}
+			pointsPreviousInterval[n] = calc.WeightedPoint{Value: d.OpenPrice, Weight: d.Volume}
 		}
 
 		// Кластеризация
@@ -389,9 +395,14 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 				fav := ""
 				if cluster == maxCluster {
 					clustersWithPricecFromPrevIntervals[cluster.Center] = wave // для этого кластера не будет создаваться волна
+
+					md := interval[len(interval)-1]
 					wave.Points = append(wave.Points, models.MarketWavePoint{
-						Timestamp: intervalStart,
-						Price:     cluster.Center,
+						Timestamp:  intervalStart,
+						Price:      cluster.Center,
+						Volume:     md.Volume,
+						BuyVolume:  md.BuyVolume,
+						SellVolume: md.SellVolume,
 					})
 					fav = "*"
 				}
@@ -410,6 +421,10 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 				wave = clustersWithPricecFromPrevIntervals[cluster.Center]
 			} else {
 
+				// подсчитываем объемы
+				// берем только последнюю запись интервала
+				md := interval[len(interval)-1]
+
 				wave = &models.MarketWave{
 					Start: intervalStart,
 					Stop:  intervalStart,
@@ -417,8 +432,11 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 					Points: make([]models.MarketWavePoint, 1),
 				}
 				wave.Points[0] = models.MarketWavePoint{
-					Timestamp: intervalStart,
-					Price:     cluster.Center,
+					Timestamp:  intervalStart,
+					Price:      cluster.Center,
+					Volume:     md.Volume,
+					BuyVolume:  md.BuyVolume,
+					SellVolume: md.SellVolume,
 				}
 				waves = append(waves, wave)
 
@@ -488,7 +506,7 @@ func printWavesStat(waves []*models.MarketWave) {
 
 func saveWaves(waves []*models.MarketWave) {
 	// Кодируем массив структур в JSON
-	jsonData, err := json.Marshal(waves)
+	jsonData, err := json.MarshalIndent(waves, "", "	")
 	if err != nil {
 		fmt.Println("Ошибка кодирования в JSON:", err)
 		return
