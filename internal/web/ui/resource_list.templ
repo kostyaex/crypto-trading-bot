@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-templ ResourceListPage(resource Resource) {
+templ ResourceListPage(resource Resource, newItemJSON string) {
 	<!DOCTYPE html>
 	<html lang="en">
 	@headerComponent(resource.Title)
@@ -14,7 +14,9 @@ templ ResourceListPage(resource Resource) {
 		<div class="container">
 			<h1>{resource.Title}</h1>
 
-			<div x-data={ string(fmt.Sprintf("resourcesList('%s')", resource.Name))} >
+			<div x-data={ string(fmt.Sprintf("resourcesList('%s',%s)", resource.Name, newItemJSON))} >
+
+				<button  class="button" @click="openNewModal()">New</button>
 
 				<table>
 					<thead>
@@ -47,13 +49,28 @@ templ ResourceListPage(resource Resource) {
 					<div class="modal-content">
 						<span class="close" x-on:click="closeModal()">&times;</span>
 						
-						<h2>Редактирование {resource.Title}</h2>
-					
 						<template x-if="editableItem">
+							
 							<form @submit.prevent="saveChanges">
 								for _, fieldName := range resource.FieldsOrder {
-									<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
-									<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("editableItem.%s", fieldName))}>
+									if fieldName != "id" {
+										<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
+										<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("editableItem.%s", fieldName))}>
+									}
+								}
+						
+								<button type="submit" class="button">Сохранить</button>
+							</form>
+						</template>
+
+						<template x-if="newItem">
+							
+							<form @submit.prevent="saveNew">
+								for _, fieldName := range resource.FieldsOrder {
+									if fieldName != "id" {
+										<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
+										<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("newItem.%s", fieldName))}>
+									}
 								}
 						
 								<button type="submit" class="button">Сохранить</button>
@@ -65,16 +82,17 @@ templ ResourceListPage(resource Resource) {
 
 		</div>
 		<script>
-		function resourcesList(resourceName) {
+		function resourcesList(resourceName, newItemJson) {
 			return {
 				// Состояние приложения
 				items: [], // Список элементов
 				isModalOpen: false, // Флаг открытия модального окна
+				newItem: null, // элемент с пустыми полями
 				editableItem: null, // Текущий редактируемый элемент
 
 				// Инициализация: загрузка данных
 				init() {
-				this.fetchItems();
+					this.fetchItems();
 				},
 
 				// Загрузка списка элементов
@@ -85,6 +103,13 @@ templ ResourceListPage(resource Resource) {
 				} catch (error) {
 					console.error('Ошибка при загрузке элементов:', error);
 				}
+				},
+
+				// Открытие модального окна для нового элемента
+				async openNewModal() {
+					//console.log(newItemJson)
+					this.newItem = newItemJson;//newItem;
+					this.isModalOpen = true;
 				},
 
 				// Открытие модального окна для редактирования
@@ -107,29 +132,52 @@ templ ResourceListPage(resource Resource) {
 				this.editableItem = null; // Очищаем данные
 				},
 
+				// Сохранить новый элемент
+				async saveNew() {
+					try {
+						const response = await fetch(`/api/resources/${resourceName}`, {
+						method: 'POST', // PUT или PATCH, в зависимости от вашего API
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(this.newItem),
+						});
+
+						if (response.ok) {
+							// Обновляем список
+							this.fetchItems();
+							this.newItem = null;
+
+							this.closeModal(); // Закрываем модальное окно
+						} else {
+						console.error('Ошибка при сохранении изменений');
+						}
+					} catch (error) {
+						console.error('Ошибка при отправке данных:', error);
+					}
+				},
+
 				// Сохранение изменений
 				async saveChanges() {
-				try {
-					const response = await fetch(`/api/resources/${resourceName}?id=eq.${this.editableItem.id}`, {
-					method: 'PATCH', // PUT или PATCH, в зависимости от вашего API
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(this.editableItem),
-					});
+					try {
+						const response = await fetch(`/api/resources/${resourceName}?id=eq.${this.editableItem.id}`, {
+						method: 'PATCH', // PUT или PATCH, в зависимости от вашего API
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(this.editableItem),
+						});
 
-					if (response.ok) {
-						// Обновляем элемент в списке
-						const index = this.items.findIndex((item) => item.id === this.editableItem.id);
-						if (index !== -1) {
-							this.items[index] = { ...this.editableItem };
+						if (response.ok) {
+							// Обновляем элемент в списке
+							const index = this.items.findIndex((item) => item.id === this.editableItem.id);
+							if (index !== -1) {
+								this.items[index] = { ...this.editableItem };
+							}
+
+							this.closeModal(); // Закрываем модальное окно
+						} else {
+						console.error('Ошибка при сохранении изменений');
 						}
-
-						this.closeModal(); // Закрываем модальное окно
-					} else {
-					console.error('Ошибка при сохранении изменений');
+					} catch (error) {
+						console.error('Ошибка при отправке данных:', error);
 					}
-				} catch (error) {
-					console.error('Ошибка при отправке данных:', error);
-				}
 				},
 			};
 			}

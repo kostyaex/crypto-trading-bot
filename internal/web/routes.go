@@ -32,13 +32,13 @@ func (s *Server) routes() {
 
 	s.router.HandleFunc("/resources/{resource}", s.resourcesHandler.GetResourcesListPage).Methods("GET")
 
-	s.router.HandleFunc("/strategies", s.strategyHandler.GetStrategiesListPage).Methods("GET")
-	s.router.HandleFunc("/strategies", s.strategyHandler.GetStrategiesListPage).Methods("GET")
-	s.router.HandleFunc("/strategies/new", s.strategyHandler.GetNewStrategyPage).Methods("GET")
-	s.router.HandleFunc("/strategies/{id}/edit", s.strategyHandler.GetEditStrategyPage).Methods("GET")
-	s.router.HandleFunc("/strategies", s.strategyHandler.PostCreateStrategy).Methods("POST")
-	s.router.HandleFunc("/strategies/{id}", s.strategyHandler.PostUpdateStrategy).Methods("POST")
-	s.router.HandleFunc("/strategies/{id}/delete", s.strategyHandler.PostDeleteStrategy).Methods("POST")
+	// s.router.HandleFunc("/strategies", s.strategyHandler.GetStrategiesListPage).Methods("GET")
+	// s.router.HandleFunc("/strategies", s.strategyHandler.GetStrategiesListPage).Methods("GET")
+	// s.router.HandleFunc("/strategies/new", s.strategyHandler.GetNewStrategyPage).Methods("GET")
+	// s.router.HandleFunc("/strategies/{id}/edit", s.strategyHandler.GetEditStrategyPage).Methods("GET")
+	// s.router.HandleFunc("/strategies", s.strategyHandler.PostCreateStrategy).Methods("POST")
+	// s.router.HandleFunc("/strategies/{id}", s.strategyHandler.PostUpdateStrategy).Methods("POST")
+	// s.router.HandleFunc("/strategies/{id}/delete", s.strategyHandler.PostDeleteStrategy).Methods("POST")
 
 	s.router.HandleFunc("/backtesting", s.marketDataHandler.GetBacktestingPage).Methods("GET")
 	s.router.HandleFunc("/api/runbacktesting", s.marketDataHandler.PostRunBacktesting).Methods("POST")
