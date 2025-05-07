@@ -39,7 +39,7 @@ func NewResourcesHandler(logger *utils.Logger) *ResourcesHandler {
 	resources["strategies"] = ui.Resource{
 		Name:        "strategies",
 		Title:       "Стратегии",
-		FieldsOrder: []string{"id", "name", "description", "config", "active"},
+		FieldsOrder: []string{"id", "name", "description", "active", "config"},
 		Fields: map[string]*ui.ResourceField{
 			"id":          &ui.ResourceField{Name: "id", Title: "ID"},
 			"name":        &ui.ResourceField{Name: "name", Title: "Наименование"},

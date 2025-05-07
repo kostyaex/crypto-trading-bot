@@ -34,7 +34,7 @@ func StrategySettingsField() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div x-init=\"\n\t\teditableItem.config = editableItem.config || {\n\t\t\t\twaves: {\n\t\t\t\t\tnum_clusters: 5\n\t\t\t\t}\n\t\t\t}\n\t\"><p>Waves</p><label for=\"settings_num_clusters\">Количество кластеров</label> <input x-model=\"editableItem.config.waves.num_clusters\" type=\"text\" id=\"settings_num_clusters\" name=\"settings_num_clusters\"></div><script>\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div x-init=\"\n\t\tfields = {\n\t\t\t\twaves: {\n\t\t\t\t\tnum_clusters: 5,\n\t\t\t\t\tblock_size: 5,\n\t\t\t\t\toverlap: 4\n\t\t\t\t}\n\t\t\t}\n\t\teditableItem.config = editableItem.config || fields\n\t\"><button class=\"button\" @click=\"editableItem.config = fields\">Обновить поля</button><p>Waves</p><label>Количество кластеров</label> <input x-model=\"editableItem.config.waves.num_clusters\" type=\"number\"> <label>Размер блока в секундах</label> <input x-model=\"editableItem.config.waves.block_size\" type=\"number\"> <label>Перекрытие смежных блоков в секундах</label> <input x-model=\"editableItem.config.waves.overlap\" type=\"number\"></div><script>\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

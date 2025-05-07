@@ -7,15 +7,23 @@ import (
 
 templ StrategySettingsField() {
 	<div x-init="
-		editableItem.config = editableItem.config || {
+		fields = {
 				waves: {
-					num_clusters: 5
+					num_clusters: 5,
+					block_size: 5,
+					overlap: 4
 				}
 			}
+		editableItem.config = editableItem.config || fields
 	">
+		<button  class="button" @click="editableItem.config = fields">Сбросить</button>
 		<p>Waves</p>
-		<label for="settings_num_clusters">Количество кластеров</label>
-		<input x-model="editableItem.config.waves.num_clusters" type="text" id="settings_num_clusters" name="settings_num_clusters">	
+		<label>Количество кластеров</label>
+		<input x-model="editableItem.config.waves.num_clusters" type="number">	
+		<label>Размер блока в секундах</label>
+		<input x-model="editableItem.config.waves.block_size" type="number">	
+		<label>Перекрытие смежных блоков в секундах</label>
+		<input x-model="editableItem.config.waves.overlap" type="number">	
 	</div>
 	<script>
 	</script>
