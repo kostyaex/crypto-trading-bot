@@ -97,127 +97,193 @@ func ResourceListPage(resource Resource, newItemJSON string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, fieldName := range resource.FieldsOrder {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<td x-text=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("item.%s", fieldName)))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 34, Col: 61}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"></td>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<td><button class=\"button\" @click=\"openEditModal(item.id)\">Edit</button></td></tr></template></tbody></table><div x-show=\"isModalOpen\" class=\"modal\" style=\"display: none;\"><div class=\"modal-content\"><span class=\"close\" x-on:click=\"closeModal()\">&times;</span><template x-if=\"editableItem\"><form @submit.prevent=\"saveChanges\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for _, fieldName := range resource.FieldsOrder {
-			if fieldName != "id" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<label for=\"")
+			if fieldName == "config" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<td><pre x-text=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var5 string
+				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("JSON.stringify(item.%s, null, 2)", fieldName)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 35, Col: 93}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"></pre></td>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<td x-text=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var6 string
-				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(string(fieldName))
+				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("item.%s", fieldName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 57, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 37, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"></td>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<td><button class=\"button\" @click=\"openEditModal(item.id)\">Edit</button></td></tr></template></tbody></table><div x-show=\"isModalOpen\" class=\"modal\" style=\"display: none;\"><div class=\"modal-content\"><span class=\"close\" x-on:click=\"closeModal()\">&times;</span><template x-if=\"editableItem &amp;&amp; !isNew\"><form @submit.prevent=\"saveChanges\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, fieldName := range resource.FieldsOrder {
+			if fieldName == "id" {
+			} else if resource.Fields[fieldName].Component == "strategysettings" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<label>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(resource.Fields[fieldName].Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 57, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 62, Col: 50}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, ":</label> <input type=\"text\" id=\"name\" name=\"name\" x-model=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, ":</label>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = StrategySettingsField().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<label for=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("editableItem.%s", fieldName)))
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(string(fieldName))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 58, Col: 110}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 65, Col: 39}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"> ")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<button type=\"submit\" class=\"button\">Сохранить</button></form></template><template x-if=\"newItem\"><form @submit.prevent=\"saveNew\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		for _, fieldName := range resource.FieldsOrder {
-			if fieldName != "id" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<label for=\"")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var9 string
-				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(string(fieldName))
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(resource.Fields[fieldName].Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 71, Col: 39}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 65, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\">")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, ":</label> <input type=\"text\" id=\"name\" name=\"name\" x-model=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var10 string
-				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(resource.Fields[fieldName].Title)
+				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("editableItem.%s", fieldName)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 71, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 66, Col: 110}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, ":</label> <input type=\"text\" id=\"name\" name=\"name\" x-model=\"")
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				var templ_7745c5c3_Var11 string
-				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("newItem.%s", fieldName)))
-				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 72, Col: 105}
-				}
-				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
-				if templ_7745c5c3_Err != nil {
-					return templ_7745c5c3_Err
-				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\"> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<button type=\"submit\" class=\"button\">Сохранить</button></form></template></div></div></div></div><script>\n\t\tfunction resourcesList(resourceName, newItemJson) {\n\t\t\treturn {\n\t\t\t\t// Состояние приложения\n\t\t\t\titems: [], // Список элементов\n\t\t\t\tisModalOpen: false, // Флаг открытия модального окна\n\t\t\t\tnewItem: null, // элемент с пустыми полями\n\t\t\t\teditableItem: null, // Текущий редактируемый элемент\n\n\t\t\t\t// Инициализация: загрузка данных\n\t\t\t\tinit() {\n\t\t\t\t\tthis.fetchItems();\n\t\t\t\t},\n\n\t\t\t\t// Загрузка списка элементов\n\t\t\t\tasync fetchItems() {\n\t\t\t\ttry {\n\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}`);\n\t\t\t\t\tthis.items = await response.json();\n\t\t\t\t} catch (error) {\n\t\t\t\t\tconsole.error('Ошибка при загрузке элементов:', error);\n\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Открытие модального окна для нового элемента\n\t\t\t\tasync openNewModal() {\n\t\t\t\t\t//console.log(newItemJson)\n\t\t\t\t\tthis.newItem = newItemJson;//newItem;\n\t\t\t\t\tthis.isModalOpen = true;\n\t\t\t\t},\n\n\t\t\t\t// Открытие модального окна для редактирования\n\t\t\t\tasync openEditModal(id) {\n\t\t\t\ttry {\n\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}?id=eq.${id}`);\n\t\t\t\t\tconst items = await response.json();\n\t\t\t\t\tconst item = items[0];\n\t\t\t\t\t//console.log(item);\n\t\t\t\t\tthis.editableItem = item;\n\t\t\t\t\tthis.isModalOpen = true;\n\t\t\t\t} catch (error) {\n\t\t\t\t\tconsole.error('Ошибка при загрузке данных для редактирования:', error);\n\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Закрытие модального окна\n\t\t\t\tcloseModal() {\n\t\t\t\tthis.isModalOpen = false;\n\t\t\t\tthis.editableItem = null; // Очищаем данные\n\t\t\t\t},\n\n\t\t\t\t// Сохранить новый элемент\n\t\t\t\tasync saveNew() {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}`, {\n\t\t\t\t\t\tmethod: 'POST', // PUT или PATCH, в зависимости от вашего API\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify(this.newItem),\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\t// Обновляем список\n\t\t\t\t\t\t\tthis.fetchItems();\n\t\t\t\t\t\t\tthis.newItem = null;\n\n\t\t\t\t\t\t\tthis.closeModal(); // Закрываем модальное окно\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\tconsole.error('Ошибка при сохранении изменений');\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Ошибка при отправке данных:', error);\n\t\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Сохранение изменений\n\t\t\t\tasync saveChanges() {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}?id=eq.${this.editableItem.id}`, {\n\t\t\t\t\t\tmethod: 'PATCH', // PUT или PATCH, в зависимости от вашего API\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify(this.editableItem),\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\t// Обновляем элемент в списке\n\t\t\t\t\t\t\tconst index = this.items.findIndex((item) => item.id === this.editableItem.id);\n\t\t\t\t\t\t\tif (index !== -1) {\n\t\t\t\t\t\t\t\tthis.items[index] = { ...this.editableItem };\n\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\tthis.closeModal(); // Закрываем модальное окно\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\tconsole.error('Ошибка при сохранении изменений');\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Ошибка при отправке данных:', error);\n\t\t\t\t\t}\n\t\t\t\t},\n\t\t\t};\n\t\t\t}\n\t\t</script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<button type=\"submit\" class=\"button\">Сохранить</button></form></template><template x-if=\"editableItem &amp;&amp; isNew\"><form @submit.prevent=\"saveNew\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		for _, fieldName := range resource.FieldsOrder {
+			if fieldName == "id" {
+			} else if resource.Fields[fieldName].Component == "strategysettings" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<label>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var11 string
+				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(resource.Fields[fieldName].Title)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 80, Col: 50}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, ":</label>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = StrategySettingsField().Render(ctx, templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<label for=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var12 string
+				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(string(fieldName))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 83, Col: 39}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var13 string
+				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(resource.Fields[fieldName].Title)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 83, Col: 74}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, ":</label> <input type=\"text\" id=\"name\" name=\"name\" x-model=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var14 string
+				templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(string(fmt.Sprintf("editableItem.%s", fieldName)))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/ui/resource_list.templ`, Line: 84, Col: 110}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<button type=\"submit\" class=\"button\">Сохранить</button></form></template></div></div></div></div><script>\n\t\tfunction resourcesList(resourceName, newItemJson) {\n\t\t\treturn {\n\t\t\t\t// Состояние приложения\n\t\t\t\titems: [], // Список элементов\n\t\t\t\tisModalOpen: false, // Флаг открытия модального окна\n\t\t\t\tisNew: false, // признак, что редактируется новый элемент\n\t\t\t\teditableItem: null, // Текущий редактируемый элемент\n\n\t\t\t\t// Инициализация: загрузка данных\n\t\t\t\tinit() {\n\t\t\t\t\tthis.fetchItems();\n\t\t\t\t},\n\n\t\t\t\t// Загрузка списка элементов\n\t\t\t\tasync fetchItems() {\n\t\t\t\ttry {\n\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}`);\n\t\t\t\t\tthis.items = await response.json();\n\t\t\t\t} catch (error) {\n\t\t\t\t\tconsole.error('Ошибка при загрузке элементов:', error);\n\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Открытие модального окна для нового элемента\n\t\t\t\tasync openNewModal() {\n\t\t\t\t\t//console.log(newItemJson)\n\t\t\t\t\tthis.editableItem = newItemJson;//newItem;\n\t\t\t\t\tthis.isNew = true;\n\t\t\t\t\tthis.isModalOpen = true;\n\t\t\t\t},\n\n\t\t\t\t// Открытие модального окна для редактирования\n\t\t\t\tasync openEditModal(id) {\n\t\t\t\ttry {\n\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}?id=eq.${id}`);\n\t\t\t\t\tconst items = await response.json();\n\t\t\t\t\tconst item = items[0];\n\t\t\t\t\t//console.log(item);\n\t\t\t\t\tthis.editableItem = item;\n\t\t\t\t\tthis.isNew = false;\n\t\t\t\t\tthis.isModalOpen = true;\n\t\t\t\t} catch (error) {\n\t\t\t\t\tconsole.error('Ошибка при загрузке данных для редактирования:', error);\n\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Закрытие модального окна\n\t\t\t\tcloseModal() {\n\t\t\t\tthis.isModalOpen = false;\n\t\t\t\tthis.editableItem = null; // Очищаем данные\n\t\t\t\t},\n\n\t\t\t\t// Сохранить новый элемент\n\t\t\t\tasync saveNew() {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}`, {\n\t\t\t\t\t\tmethod: 'POST', // PUT или PATCH, в зависимости от вашего API\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify(this.editableItem),\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\t// Обновляем список\n\t\t\t\t\t\t\tthis.fetchItems();\n\t\t\t\t\t\t\tthis.editableItem = null;\n\n\t\t\t\t\t\t\tthis.closeModal(); // Закрываем модальное окно\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\tconsole.error('Ошибка при сохранении изменений');\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Ошибка при отправке данных:', error);\n\t\t\t\t\t}\n\t\t\t\t},\n\n\t\t\t\t// Сохранение изменений\n\t\t\t\tasync saveChanges() {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst response = await fetch(`/api/resources/${resourceName}?id=eq.${this.editableItem.id}`, {\n\t\t\t\t\t\tmethod: 'PATCH', // PUT или PATCH, в зависимости от вашего API\n\t\t\t\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\t\t\t\tbody: JSON.stringify(this.editableItem),\n\t\t\t\t\t\t});\n\n\t\t\t\t\t\tif (response.ok) {\n\t\t\t\t\t\t\t// Обновляем элемент в списке\n\t\t\t\t\t\t\tconst index = this.items.findIndex((item) => item.id === this.editableItem.id);\n\t\t\t\t\t\t\tif (index !== -1) {\n\t\t\t\t\t\t\t\tthis.items[index] = { ...this.editableItem };\n\t\t\t\t\t\t\t}\n\n\t\t\t\t\t\t\tthis.closeModal(); // Закрываем модальное окно\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\tconsole.error('Ошибка при сохранении изменений');\n\t\t\t\t\t\t}\n\t\t\t\t\t} catch (error) {\n\t\t\t\t\t\tconsole.error('Ошибка при отправке данных:', error);\n\t\t\t\t\t}\n\t\t\t\t},\n\t\t\t};\n\t\t\t}\n\t\t</script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

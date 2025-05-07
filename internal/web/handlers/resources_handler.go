@@ -44,8 +44,8 @@ func NewResourcesHandler(logger *utils.Logger) *ResourcesHandler {
 			"id":          &ui.ResourceField{Name: "id", Title: "ID"},
 			"name":        &ui.ResourceField{Name: "name", Title: "Наименование"},
 			"description": &ui.ResourceField{Name: "description", Title: "Описание"},
-			"config":      &ui.ResourceField{Name: "config", Title: "Конфигурация"},
 			"active":      &ui.ResourceField{Name: "active", Title: "Активность"},
+			"config":      &ui.ResourceField{Name: "config", Title: "Конфигурация", Component: "strategysettings"},
 		},
 	}
 

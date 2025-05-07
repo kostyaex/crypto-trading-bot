@@ -31,7 +31,11 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 					<template x-for="item in items" :key="item.id">
 						<tr>
 						for _, fieldName := range resource.FieldsOrder {
-							<td x-text={ string(fmt.Sprintf("item.%s", fieldName))}></td>
+							if fieldName == "config" {
+								<td ><pre x-text={ string(fmt.Sprintf("JSON.stringify(item.%s, null, 2)", fieldName))}></pre></td>
+							} else {
+								<td x-text={ string(fmt.Sprintf("item.%s", fieldName))}></td>
+							}
 						}
 							<td>
 								<button  class="button" @click="openEditModal(item.id)">Edit</button>
@@ -49,11 +53,15 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 					<div class="modal-content">
 						<span class="close" x-on:click="closeModal()">&times;</span>
 						
-						<template x-if="editableItem">
+						<template x-if="editableItem && !isNew">
 							
 							<form @submit.prevent="saveChanges">
 								for _, fieldName := range resource.FieldsOrder {
-									if fieldName != "id" {
+									if fieldName == "id" {
+									} else if resource.Fields[fieldName].Component == "strategysettings" {
+										<label>{resource.Fields[fieldName].Title}:</label>
+										@StrategySettingsField()
+									} else {
 										<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
 										<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("editableItem.%s", fieldName))}>
 									}
@@ -63,13 +71,17 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 							</form>
 						</template>
 
-						<template x-if="newItem">
+						<template x-if="editableItem && isNew">
 							
 							<form @submit.prevent="saveNew">
 								for _, fieldName := range resource.FieldsOrder {
-									if fieldName != "id" {
+									if fieldName == "id" {
+									} else if resource.Fields[fieldName].Component == "strategysettings" {
+										<label>{resource.Fields[fieldName].Title}:</label>
+										@StrategySettingsField()
+									} else {
 										<label for={string(fieldName)}>{resource.Fields[fieldName].Title}:</label>
-										<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("newItem.%s", fieldName))}>
+										<input type="text" id="name" name="name" x-model={ string(fmt.Sprintf("editableItem.%s", fieldName))}>
 									}
 								}
 						
@@ -87,7 +99,7 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 				// Состояние приложения
 				items: [], // Список элементов
 				isModalOpen: false, // Флаг открытия модального окна
-				newItem: null, // элемент с пустыми полями
+				isNew: false, // признак, что редактируется новый элемент
 				editableItem: null, // Текущий редактируемый элемент
 
 				// Инициализация: загрузка данных
@@ -108,7 +120,8 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 				// Открытие модального окна для нового элемента
 				async openNewModal() {
 					//console.log(newItemJson)
-					this.newItem = newItemJson;//newItem;
+					this.editableItem = newItemJson;//newItem;
+					this.isNew = true;
 					this.isModalOpen = true;
 				},
 
@@ -120,6 +133,7 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 					const item = items[0];
 					//console.log(item);
 					this.editableItem = item;
+					this.isNew = false;
 					this.isModalOpen = true;
 				} catch (error) {
 					console.error('Ошибка при загрузке данных для редактирования:', error);
@@ -138,13 +152,13 @@ templ ResourceListPage(resource Resource, newItemJSON string) {
 						const response = await fetch(`/api/resources/${resourceName}`, {
 						method: 'POST', // PUT или PATCH, в зависимости от вашего API
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(this.newItem),
+						body: JSON.stringify(this.editableItem),
 						});
 
 						if (response.ok) {
 							// Обновляем список
 							this.fetchItems();
-							this.newItem = null;
+							this.editableItem = null;
 
 							this.closeModal(); // Закрываем модальное окно
 						} else {

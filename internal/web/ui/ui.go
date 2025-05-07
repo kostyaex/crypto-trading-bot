@@ -1,8 +1,9 @@
 package ui
 
 type ResourceField struct {
-	Name  string
-	Title string
+	Name      string
+	Title     string
+	Component string
 	//Value string
 }
 

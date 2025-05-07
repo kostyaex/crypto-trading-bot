@@ -1,0 +1,23 @@
+package ui
+
+import (
+	//"fmt"
+	//"crypto-trading-bot/internal/models"
+)
+
+templ StrategySettingsField() {
+	<div x-init="
+		editableItem.config = editableItem.config || {
+				waves: {
+					num_clusters: 5
+				}
+			}
+	">
+		<p>Waves</p>
+		<label for="settings_num_clusters">Количество кластеров</label>
+		<input x-model="editableItem.config.waves.num_clusters" type="text" id="settings_num_clusters" name="settings_num_clusters">	
+	</div>
+	<script>
+	</script>
+
+}
