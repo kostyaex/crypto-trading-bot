@@ -61,8 +61,8 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 		default:
 			// Проверяем время последнего запуска.
 			if time.Now().Add(-1 * time.Second).Before(s.lastTime) {
-				s.logger.Debug("Ждем как пройдет 300 секунда с последнего запуска\n")
-				time.Sleep(300 * time.Second)
+				s.logger.Debug("Выполняем не чаще 1 раза в секунду\n")
+				time.Sleep(1 * time.Second)
 				continue
 			}
 			//s.logger.Debug("LoadData\n")
@@ -76,7 +76,7 @@ func (s *marketDataService) RunSchudeler(ctx context.Context) {
 // Возвращает данными свернутыми интервалами: сами интервалы массивом (чтобы сохранить порядок) и соответствие массивов по интервалам.
 // Интервалы должны быть полными, т.е. по всем биржам в этом интервале данные должны быть загружены полностью, другими словами уже есть данные за следующий интервал.
 func (s *marketDataService) LoadData() {
-	s.logger.Infof("Starting data fetching")
+	s.logger.Debugf("Starting data fetching")
 
 	// перебираем все биржи и таблицу состояния данных - для каждой активной выполняем загрузку
 	// В таблице состояний записаны данные для загрузки: пара (символ), интервал, дата актуальности с которой нужно продолжить загрузку
@@ -99,7 +99,7 @@ func (s *marketDataService) LoadData() {
 			//startTime, _, _, _ := GetIntervalBounds(status.ActualTime, status.TimeFrame)
 			startTime := status.ActualTime
 
-			s.logger.Infof("Fetching data from exchange: %s %s %v", ex.GetName(), status.Symbol, startTime)
+			s.logger.Debugf("Fetching data from exchange: %s %s %v", ex.GetName(), status.Symbol, startTime)
 
 			marketData, lastTime, err := s.exchangeService.LoadData(ex, status.Symbol, status.TimeFrame, startTime)
 			if err != nil {
@@ -135,7 +135,7 @@ func (s *marketDataService) LoadData() {
 
 	}
 
-	s.logger.Infof("Data fetching task completed")
+	s.logger.Debugf("Data fetching task completed")
 
 	return
 }
