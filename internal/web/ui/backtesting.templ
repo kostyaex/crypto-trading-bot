@@ -16,7 +16,11 @@ templ BacktestingPage() {
                 <br><br>
                 <button type="submit">Подтвердить</button>
             </form>
-            <p x-text="form.status"></p>
+            <h2>Результаты:</h2>
+            <p x-text="status"></p>
+            <template x-for="result in results">
+                <p x-text="result.log"></p>
+            </template>
         </div>
         <script>
 
@@ -36,8 +40,9 @@ templ BacktestingPage() {
                 form: {
                     start: convertDateToInputFormat(currentTime),
                     stop: convertDateToInputFormat(currentTime),
-                    status: ""
                 },
+                status: "",
+                results: [],
 				async submit() {
 				try {
 					const response = await fetch('/api/runbacktesting', {
@@ -46,11 +51,14 @@ templ BacktestingPage() {
 					body: JSON.stringify(this.form),
 					});
 
-					if (response.ok) {
-						this.status = "Команда отправлена"
-					} else {
-					    this.status = 'Ошибка при сохранении изменений';
-					}
+                    this.results = await response.json();
+					this.status = "Выполнено"
+
+					// if (response.ok) {
+    				// 	this.status = "Выполнено"
+					// } else {
+					//     this.status = 'Ошибка выполнения';
+					// }
 				} catch (error) {
                     this.status = 'Ошибка при отправке данных:'+error
 					console.error('Ошибка при отправке данных:', error);

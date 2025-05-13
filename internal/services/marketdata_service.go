@@ -23,7 +23,7 @@ type MarketDataService interface {
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
 	RunSchudeler(ctx context.Context)
-	RunBacktesting(startTime, endTime time.Time) error
+	RunBacktesting(startTime, endTime time.Time) (result []BacktestingResult)
 }
 
 type WavesCollection struct {
@@ -281,14 +281,24 @@ func (s *marketDataService) ClusterMarketData(data []*models.MarketData, numClus
 
 //------------------------------------------------------------------
 
-func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
+type BacktestingResult struct {
+	Strategy     *models.Strategy `json:"-"`
+	StrategyName string           `json:"strategy_name"`
+	Log          string           `json:"log"`
+}
+
+func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) (result []BacktestingResult) {
+
+	results := make([]BacktestingResult, 0)
 
 	// Получить данные за период
 	// надо переделать на функцию получения данных за период
-	marketData, err := s.GetMarketData("BTCUSDT", 1000)
+	symbol := "BTCUSDT"
+	marketData, err := s.repo.MarketData.GetMarketDataPeriod(symbol, startTime, endTime)
+	//	marketData, err := s.GetMarketData("BTCUSDT", 1000)
 	if err != nil {
 		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
-		return err
+		return results
 	}
 
 	s.logger.Debugf("marketData: %d\n", len(marketData))
@@ -460,11 +470,15 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) error {
 
 	}
 
-	fmt.Printf("Waves: %d\n", len(waves))
+	res := fmt.Sprintf("Waves: %d\n", len(waves))
 	//printWavesStat(waves)
 	saveWaves(waves)
 
-	return nil
+	results = append(results, BacktestingResult{
+		Log: res,
+	})
+
+	return results
 }
 
 // Выводим статистику по полученным волнам
@@ -513,7 +527,7 @@ func saveWaves(waves []*models.MarketWave) {
 	}
 
 	// Записываем JSON в файл
-	filename := "../../data/waves.json"
+	filename := "./data/waves.json"
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println("Ошибка создания файла:", err)
@@ -523,9 +537,9 @@ func saveWaves(waves []*models.MarketWave) {
 
 	_, err = file.Write(jsonData)
 	if err != nil {
-		fmt.Println("Ошибка записи в файл:", err)
+		fmt.Printf("Ошибка записи в файл:%s\n", err)
 		return
 	}
 
-	fmt.Printf("JSON записан в файл %s", filename)
+	fmt.Printf("JSON записан в файл %s\n", filename)
 }

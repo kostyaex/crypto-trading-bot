@@ -74,9 +74,16 @@ func (h *MarketDataHandler) PostRunBacktesting(w http.ResponseWriter, r *http.Re
 	fmt.Println("Start:", start)
 	fmt.Println("Stop:", stop)
 
-	h.marketDataService.RunBacktesting(start, stop)
+	results := h.marketDataService.RunBacktesting(start, stop)
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(results); err != nil {
+		h.logger.Errorf("Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	//w.WriteHeader(http.StatusOK)
 }
 
 //curl -X POST -H "Content-Type: application/json" -d '{"start": "2023-01-01T12:00:00", "stop": "2023-01-01T13:00:00"}' http://localhost:5000/api/runbacktesting
