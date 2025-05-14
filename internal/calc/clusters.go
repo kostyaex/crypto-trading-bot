@@ -6,8 +6,8 @@ import (
 )
 
 type WeightedPoint struct {
-	Value  float64
-	Weight float64
+	Value  float64 `json:"value"`
+	Weight float64 `json:"weight"`
 	//Cluster int
 }
 
@@ -99,4 +99,21 @@ func KMeansWeighted1D(points []WeightedPoint, k int, maxIterations int) []Cluste
 	}
 
 	return filterdClusters
+}
+
+func FindMaxVolumeCluster(points []WeightedPoint, pricesToCluster map[float64]*Cluster) *Cluster {
+	clusterVolumes := make(map[*Cluster]float64)
+	for _, p := range points {
+		if cluster, ok := pricesToCluster[p.Value]; ok {
+			clusterVolumes[cluster] += p.Weight
+		}
+	}
+
+	var maxCluster *Cluster
+	for cluster, vol := range clusterVolumes {
+		if maxCluster == nil || vol > clusterVolumes[maxCluster] {
+			maxCluster = cluster
+		}
+	}
+	return maxCluster
 }

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"crypto-trading-bot/internal/calc"
 	"fmt"
 	"time"
 )
@@ -48,11 +49,12 @@ type MarketWave struct {
 }
 
 type MarketWavePoint struct {
-	Timestamp  time.Time `json:"timestamp"`
-	Price      float64   `json:"price"`
-	Volume     float64   `json:"volume"`
-	BuyVolume  float64   `json:"buyvolume"`
-	SellVolume float64   `json:"sellvolume"`
+	Timestamp     time.Time            `json:"timestamp"`
+	Price         float64              `json:"price"`
+	Volume        float64              `json:"volume"`
+	BuyVolume     float64              `json:"buyvolume"`
+	SellVolume    float64              `json:"sellvolume"`
+	ClusterPoints []calc.WeightedPoint `json:"cluster_points"`
 }
 
 func (wave *MarketWave) String() string {

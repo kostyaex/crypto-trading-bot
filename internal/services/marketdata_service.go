@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto-trading-bot/internal/calc"
+	"crypto-trading-bot/internal/config"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
@@ -23,6 +24,7 @@ type MarketDataService interface {
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 	ClusterMarketData(data []*models.MarketData, numClusters int) ([]*models.MarketData, error)
 	RunSchudeler(ctx context.Context)
+	RunStrategyForSource(strategy models.Strategy, source MarketDataSource) error
 	RunBacktesting(startTime, endTime time.Time) (result []BacktestingResult)
 }
 
@@ -33,6 +35,7 @@ type WavesCollection struct {
 }
 
 type marketDataService struct {
+	conf            *config.Config
 	repo            *repositories.Repository
 	logger          *utils.Logger
 	exchanges       []exchange.Exchange
@@ -41,8 +44,9 @@ type marketDataService struct {
 	lastTime        time.Time
 }
 
-func NewMarketDataService(repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, exchangeService ExchangeService) MarketDataService {
+func NewMarketDataService(conf *config.Config, repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, exchangeService ExchangeService) MarketDataService {
 	return &marketDataService{
+		conf:            conf,
 		repo:            repo,
 		logger:          logger,
 		exchanges:       exchanges,
@@ -287,14 +291,55 @@ type BacktestingResult struct {
 	Log          string           `json:"log"`
 }
 
+// получает набор торговых данных, разюивает их в интервалы и направляет в каналы
+func prepareMarketDataChannel(marketData []*models.MarketData) (<-chan *models.MarketData, <-chan []*models.MarketData) {
+	marketDataCh := make(chan *models.MarketData)
+	intervalsCh := make(chan []*models.MarketData)
+
+	blockSize := 5 // 60 - для минутных данных биржи получается группировка по часам
+	overlap := 4   // Наложение блоков между собой. 0 - без наложения. Должен быть меньше размера блока.
+
+	go func() {
+		for _, item := range marketData {
+			marketDataCh <- item
+		}
+		close(marketDataCh)
+	}()
+
+	go func() {
+		utils.SplitChannelWithOverlap(marketDataCh, blockSize, overlap, intervalsCh)
+		close(intervalsCh)
+	}()
+
+	return marketDataCh, intervalsCh
+}
+
 func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) (result []BacktestingResult) {
 
 	results := make([]BacktestingResult, 0)
 
+	// strategies, err := s.repo.Strategy.GetActiveStrategies()
+	// if err != nil {
+	// 	s.logger.Errorf("Ошибка получения активных стратегий: %s\n", err)
+	// 	return results
+	// }
+
+	// seen := make(map[string]struct{})
+	// for _, item := range strategies {
+	// 	// обход уникальных сочетаний символов и интервалов
+	// 	key := item.symbol + "|" + item.interval
+	// 	if _, ok := seen[key]; ok {
+	// 		continue
+	// 	}
+	// 	seen[key] = struct{}{}
+	// }
+
 	// Получить данные за период
 	// надо переделать на функцию получения данных за период
 	symbol := "BTCUSDT"
-	marketData, err := s.repo.MarketData.GetMarketDataPeriod(symbol, startTime, endTime)
+	interval := "1m"
+	// добавить передачу интервала
+	marketData, err := s.repo.MarketData.GetMarketDataPeriod(symbol, interval, startTime, endTime)
 	//	marketData, err := s.GetMarketData("BTCUSDT", 1000)
 	if err != nil {
 		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
@@ -472,7 +517,9 @@ func (s *marketDataService) RunBacktesting(startTime, endTime time.Time) (result
 
 	res := fmt.Sprintf("Waves: %d\n", len(waves))
 	//printWavesStat(waves)
-	saveWaves(waves)
+	if s.conf.Backtesting.WavesDumpDir != "" {
+		saveWaves(waves, s.conf.Backtesting.WavesDumpDir+"_waves.json")
+	}
 
 	results = append(results, BacktestingResult{
 		Log: res,
@@ -518,7 +565,7 @@ func printWavesStat(waves []*models.MarketWave) {
 	fmt.Println()
 }
 
-func saveWaves(waves []*models.MarketWave) {
+func saveWaves(waves []*models.MarketWave, filePath string) {
 	// Кодируем массив структур в JSON
 	jsonData, err := json.MarshalIndent(waves, "", "	")
 	if err != nil {
@@ -527,8 +574,7 @@ func saveWaves(waves []*models.MarketWave) {
 	}
 
 	// Записываем JSON в файл
-	filename := "./data/waves.json"
-	file, err := os.Create(filename)
+	file, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println("Ошибка создания файла:", err)
 		return
@@ -541,5 +587,5 @@ func saveWaves(waves []*models.MarketWave) {
 		return
 	}
 
-	fmt.Printf("JSON записан в файл %s\n", filename)
+	fmt.Printf("JSON записан в файл %s\n", filePath)
 }

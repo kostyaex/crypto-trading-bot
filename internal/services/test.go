@@ -40,7 +40,7 @@ func NewTestSetup() *TestSetup {
 
 	strategyService := NewStrategyService(repo)
 	exchangeService := NewEchangeService(repo, logger, exchanges)
-	marketDataService := NewMarketDataService(repo, logger, exchanges, exchangeService)
+	marketDataService := NewMarketDataService(cfg, repo, logger, exchanges, exchangeService)
 
 	return &TestSetup{
 		cfg:               cfg,

@@ -11,7 +11,7 @@ import (
 type MarketDataRepository interface {
 	SaveMarketData(data []*models.MarketData) error
 	GetMarketData(symbol string, limit int) ([]*models.MarketData, error)
-	GetMarketDataPeriod(symbol string, start time.Time, end time.Time) ([]*models.MarketData, error)
+	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error)
 
 	SaveClusterData(data []*models.ClusterData) error
 	GetClusterData(symbol string, limit int) ([]*models.ClusterData, error)
@@ -118,16 +118,16 @@ func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*model
 	return marketData, nil
 }
 
-func (r *marketDataRepository) GetMarketDataPeriod(symbol string, start time.Time, end time.Time) ([]*models.MarketData, error) {
+func (r *marketDataRepository) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error) {
 	query := `
         SELECT exchange, symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp
         FROM market_data
-        WHERE symbol = $1 AND timestamp >= $2 AND timestamp <= $3
+        WHERE symbol = $1 AND time_frame = $2 AND timestamp >= $3 AND timestamp <= $4
         ORDER BY timestamp ASC;
     `
 
 	var marketData []*models.MarketData
-	err := r.db.Select(&marketData, query, symbol, start, end)
+	err := r.db.Select(&marketData, query, symbol, interval, start, end)
 	if err != nil {
 		r.logger.Errorf("Ошибка получения market_data: %v", err)
 		return nil, err

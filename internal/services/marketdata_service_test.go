@@ -29,8 +29,6 @@ func Test_marketDataService_RunBacktesting(t *testing.T) {
 
 	startTime := time.Now().Add(-time.Hour)
 	// пока не важно какое время
-	err := setup.marketDataService.RunBacktesting(startTime, startTime)
-	if err != nil {
-		t.Errorf("Ошибка: %s", err)
-	}
+	setup.marketDataService.RunBacktesting(startTime, startTime)
+
 }

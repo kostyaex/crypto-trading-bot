@@ -1,6 +1,7 @@
 package models
 
 import (
+	"crypto-trading-bot/internal/utils"
 	"encoding/json"
 
 	"github.com/mitchellh/mapstructure"
@@ -34,8 +35,9 @@ type StrategyWavesSettings struct {
 // }
 
 // NewStrategy создает новую торговую стратегию
-func NewStrategy(name, description string, config map[string]interface{}) (*Strategy, error) {
-	configJSON, err := json.Marshal(config)
+func NewStrategy(name, description string, settings StrategySettings) (*Strategy, error) {
+
+	configJSON, err := utils.StructToJSON(settings)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +45,7 @@ func NewStrategy(name, description string, config map[string]interface{}) (*Stra
 	return &Strategy{
 		Name:        name,
 		Description: description,
-		Config:      configJSON,
+		Config:      []byte(configJSON),
 		Active:      true,
 	}, nil
 }

@@ -75,3 +75,62 @@ func Test_GroupingAndBroadcasting(t *testing.T) {
 	assert.Equal(t, len(testData), count2)
 
 }
+
+type MockMarketDataSource struct {
+	data []*models.MarketData
+}
+
+func NewMockMarketDataSource(data []*models.MarketData) *MockMarketDataSource {
+	return &MockMarketDataSource{data: data}
+}
+
+func (m *MockMarketDataSource) GetMarketDataCh() <-chan *models.MarketData {
+	ch := make(chan *models.MarketData)
+	go func() {
+		for _, item := range m.data {
+			ch <- item
+		}
+		close(ch)
+	}()
+	return ch
+}
+
+func (m *MockMarketDataSource) Close() {}
+
+func Test_marketDataService_runStrategyForSource(t *testing.T) {
+
+	setup := NewTestSetup()
+
+	// Подготовка тестовых данных
+	now, _ := time.Parse(time.RFC3339, "2025-01-05T00:00:00Z") //time.Now()
+	testData := []*models.MarketData{
+		{Timestamp: now, OpenPrice: 100, Volume: 10},
+		{Timestamp: now.Add(time.Minute), OpenPrice: 105, Volume: 20},
+		{Timestamp: now.Add(2 * time.Minute), OpenPrice: 103, Volume: 15},
+		{Timestamp: now.Add(3 * time.Minute), OpenPrice: 107, Volume: 25},
+		{Timestamp: now.Add(4 * time.Minute), OpenPrice: 108, Volume: 30},
+	}
+
+	source := NewMockMarketDataSource(testData)
+
+	strategy, err := models.NewStrategy("test-strategy", "",
+		models.StrategySettings{
+			Symbol:   "BTCUSDT",
+			Interval: "1m",
+			Waves:    models.StrategyWavesSettings{BlockSize: 3, Overlap: 2, NumClusters: 2}})
+	if err != nil {
+		t.Errorf("Ошибка создания новой стратегии %v", err)
+		return
+	}
+
+	// Вызов тестируемой функции
+	err = setup.marketDataService.RunStrategyForSource(*strategy, source)
+	if err != nil {
+		t.Errorf("Ошибка выполнения RunStrategyForSource %v", err)
+		return
+	}
+
+	// // Проверяем, что результаты содержат ожидаемое количество волн
+	// assert.NotEmpty(t, results)
+	// assert.Contains(t, results[0].Log, "Waves:")
+}

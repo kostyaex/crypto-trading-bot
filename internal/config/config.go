@@ -43,6 +43,7 @@ type Config struct {
 	} `mapstructure:"security"`
 
 	Backtesting struct {
+		WavesDumpDir      string  `mapstructure:"wavesDumpDir"`
 		DefaultCapital    float64 `mapstructure:"defaultCapital"`
 		DefaultCommission float64 `mapstructure:"defaultCommission"`
 		DefaultSpread     float64 `mapstructure:"defaultSpread"`
