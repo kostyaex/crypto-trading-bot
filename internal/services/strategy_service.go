@@ -1,11 +1,12 @@
 package services
 
 import (
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
 )
 
 type StrategyService interface {
-	// GetActiveStrategies() ([]*models.Strategy, error)
+	GetActiveStrategies() ([]*models.Strategy, error)
 	// GetStrategyByID(id int) (*models.Strategy, error)
 	// SaveStrategy(strat *models.Strategy) error
 	// UpdateStrategy(strat *models.Strategy) error
@@ -20,9 +21,9 @@ func NewStrategyService(repo *repositories.Repository) StrategyService {
 	return &strategyService{repo: repo}
 }
 
-// func (s *strategyService) GetActiveStrategies() ([]*models.Strategy, error) {
-// 	return s.repo.Strategy.GetActiveStrategies()
-// }
+func (s *strategyService) GetActiveStrategies() ([]*models.Strategy, error) {
+	return s.repo.Strategy.GetActiveStrategies()
+}
 
 // func (s *strategyService) GetStrategyByID(id int) (*models.Strategy, error) {
 // 	return s.repo.Strategy.GetStrategyByID(id)

@@ -8,22 +8,35 @@ import (
 templ StrategySettingsField() {
 	<div x-init="
 		fields = {
-				waves: {
-					num_clusters: 5,
-					block_size: 5,
-					overlap: 4
-				}
+			symbol: 'BTCUSDT',
+			interval: '1s',
+			waves: {
+				num_clusters: 5,
+				block_size: 5,
+				overlap: 4
 			}
+		}
 		editableItem.config = editableItem.config || fields
 	">
 		<button  class="button" @click="editableItem.config = fields">Сбросить</button>
+
+		<label>Пара(тикер)</label>
+		<input x-model="editableItem.config.symbol" type="text">	
+
+		<label>Используемый интервал торговых данных</label>
+		<input x-model="editableItem.config.interval" type="text">	
+
 		<p>Waves</p>
+
 		<label>Количество кластеров</label>
 		<input x-model="editableItem.config.waves.num_clusters" type="number">	
+
 		<label>Размер блока в секундах</label>
 		<input x-model="editableItem.config.waves.block_size" type="number">	
+
 		<label>Перекрытие смежных блоков в секундах</label>
 		<input x-model="editableItem.config.waves.overlap" type="number">	
+
 	</div>
 	<script>
 	</script>

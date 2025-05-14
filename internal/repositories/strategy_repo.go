@@ -1,11 +1,12 @@
 package repositories
 
 import (
+	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/utils"
 )
 
 type StrategyRepository interface {
-	// GetActiveStrategies() ([]*models.Strategy, error)
+	GetActiveStrategies() ([]*models.Strategy, error)
 	// GetStrategyByID(id int) (*models.Strategy, error)
 	// SaveStrategy(strat *models.Strategy) error
 	// UpdateStrategy(strat *models.Strategy) error
@@ -21,23 +22,23 @@ func NewStrategyRepository(db *DB, logger *utils.Logger) StrategyRepository {
 	return &strategyRepository{db: db, logger: logger}
 }
 
-// func (r *strategyRepository) GetActiveStrategies() ([]*models.Strategy, error) {
-// 	query := `
-//         SELECT id, name, description, config
-//         FROM strategies
-//         WHERE active = true;
-//     `
+func (r *strategyRepository) GetActiveStrategies() ([]*models.Strategy, error) {
+	query := `
+		 SELECT id, name, description, config
+		 FROM strategies
+		 WHERE active = true;
+	 `
 
-// 	var strategies []*models.Strategy
-// 	err := r.db.Select(&strategies, query)
-// 	if err != nil {
-// 		r.logger.Errorf("Failed to get active strategies: %v", err)
-// 		return nil, err
-// 	}
+	var strategies []*models.Strategy
+	err := r.db.Select(&strategies, query)
+	if err != nil {
+		r.logger.Errorf("Failed to get active strategies: %v", err)
+		return nil, err
+	}
 
-// 	r.logger.Infof("Active strategies retrieved: %v", strategies)
-// 	return strategies, nil
-// }
+	r.logger.Infof("Active strategies retrieved: %v", strategies)
+	return strategies, nil
+}
 
 // func (r *strategyRepository) GetStrategyByID(id int) (*models.Strategy, error) {
 // 	query := `

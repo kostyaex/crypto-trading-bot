@@ -2,6 +2,8 @@ package models
 
 import (
 	"encoding/json"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 // Strategy представляет торговую стратегию
@@ -12,6 +14,24 @@ type Strategy struct {
 	Config      json.RawMessage `db:"config"`
 	Active      bool            `db:"active"`
 }
+
+// для добавления полей в интерактивное поле см strategy_settings_field.templ
+
+type StrategySettings struct {
+	Symbol   string                `mapstructure:"symbol"`   // используемая пара
+	Interval string                `mapstructure:"interval"` // используемый интервал
+	Waves    StrategyWavesSettings `mapstructure:"waves"`
+}
+
+type StrategyWavesSettings struct {
+	NumClusters int `mapstructure:"num_clusters"`
+	BlockSize   int `mapstructure:"block_size"`
+	Overlap     int `mapstructure:"overlap"`
+}
+
+// type WawesSettings struct {
+// 	NumClusters int `mapstructure:"num_clusters" name:"Количество кластеров" description:""`
+// }
 
 // NewStrategy создает новую торговую стратегию
 func NewStrategy(name, description string, config map[string]interface{}) (*Strategy, error) {
@@ -28,19 +48,27 @@ func NewStrategy(name, description string, config map[string]interface{}) (*Stra
 	}, nil
 }
 
+// Распаковывает JSON поле в структуру настроек
+func (s *Strategy) Settings() (*StrategySettings, error) {
+	var config map[string]interface{}
+	if err := json.Unmarshal(s.Config, &config); err != nil {
+		return nil, err
+	}
+
+	var settings StrategySettings
+	err := mapstructure.Decode(config, &settings)
+	if err != nil {
+		return nil, err
+	}
+
+	return &settings, nil
+}
+
 // // метаданные поля настроек. Читается из тегов полей стркутур *Settings
 // type SettingMetadata struct {
 // 	Name        string
 // 	Description string
 // 	Nested      []SettingMetadata
-// }
-
-// type StrategyWavesSettings struct {
-// 	Waves WawesSettings `mapstructure:"waves" name:"Настройки волн"`
-// }
-
-// type WawesSettings struct {
-// 	NumClusters int `mapstructure:"num_clusters" name:"Количество кластеров" description:""`
 // }
 
 // func GetMetadataSettings(v interface{}) []SettingMetadata {

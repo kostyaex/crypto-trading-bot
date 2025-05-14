@@ -9,12 +9,12 @@ import (
 )
 
 type TestSetup struct {
-	cfg       *config.Config
-	db        *repositories.DB
-	repo      *repositories.Repository
-	exchanges []exchange.Exchange
-	logger    *utils.Logger
-
+	cfg               *config.Config
+	db                *repositories.DB
+	repo              *repositories.Repository
+	exchanges         []exchange.Exchange
+	logger            *utils.Logger
+	strategyService   StrategyService
 	exchangeService   ExchangeService
 	marketDataService MarketDataService
 }
@@ -38,6 +38,7 @@ func NewTestSetup() *TestSetup {
 
 	repo := repositories.NewRepository(db, logger)
 
+	strategyService := NewStrategyService(repo)
 	exchangeService := NewEchangeService(repo, logger, exchanges)
 	marketDataService := NewMarketDataService(repo, logger, exchanges, exchangeService)
 
@@ -49,6 +50,7 @@ func NewTestSetup() *TestSetup {
 		logger:            logger,
 		exchangeService:   exchangeService,
 		marketDataService: marketDataService,
+		strategyService:   strategyService,
 	}
 
 }
