@@ -108,6 +108,8 @@ func (a *App) Run() error {
 	// 	return err
 	// }
 
+	//web.StartMetricsServer(ctx, ":6060")
+
 	if err := a.webServer.Start(ctx); err != nil {
 		return err
 	}

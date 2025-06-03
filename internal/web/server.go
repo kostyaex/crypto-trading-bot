@@ -14,6 +14,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
@@ -70,4 +71,31 @@ func (s *Server) Start(ctx context.Context) error {
 
 	log.Printf("Starting web server on port %s", s.port)
 	return s.server.ListenAndServe()
+}
+
+// startMetricsServer запускает HTTP-сервер для метрик Prometheus и ждёт ctx.Done()
+func StartMetricsServer(ctx context.Context, addr string) error {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	server := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	// Запускаем сервер в отдельной горутине
+	go func() {
+		log.Printf("Metrics server started on %s", addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Could not start metrics server: %v", err)
+		}
+	}()
+
+	go func() {
+		// Ждём сигнал о завершении
+		<-ctx.Done()
+		server.Shutdown(ctx)
+	}()
+
+	return nil
 }
