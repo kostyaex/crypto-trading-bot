@@ -1,8 +1,8 @@
-package services
+package strategy
 
 import (
+	"crypto-trading-bot/internal/core/repositories"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/repositories"
 )
 
 type StrategyService interface {

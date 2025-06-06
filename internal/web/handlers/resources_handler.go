@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/web/ui"
 	"encoding/json"
 	"fmt"
@@ -12,11 +12,11 @@ import (
 
 // для обращения к API postgre (postgrest)
 type ResourcesHandler struct {
-	logger    *utils.Logger
+	logger    *logger.Logger
 	resources map[string]ui.Resource
 }
 
-func NewResourcesHandler(logger *utils.Logger) *ResourcesHandler {
+func NewResourcesHandler(logger *logger.Logger) *ResourcesHandler {
 	resources := make(map[string]ui.Resource)
 
 	// Заполняем метаданные для различных таблиц

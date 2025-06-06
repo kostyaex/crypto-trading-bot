@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
 	"time"
 )
 
@@ -11,10 +11,10 @@ type IndicatorRepository interface {
 
 type indicatorRepository struct {
 	db     *DB
-	logger *utils.Logger
+	logger *logger.Logger
 }
 
-func NewIndicatorRepository(db *DB, logger *utils.Logger) IndicatorRepository {
+func NewIndicatorRepository(db *DB, logger *logger.Logger) IndicatorRepository {
 	return &indicatorRepository{db: db, logger: logger}
 }
 

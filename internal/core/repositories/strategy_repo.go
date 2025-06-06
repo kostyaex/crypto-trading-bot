@@ -1,8 +1,8 @@
 package repositories
 
 import (
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/utils"
 )
 
 type StrategyRepository interface {
@@ -15,10 +15,10 @@ type StrategyRepository interface {
 
 type strategyRepository struct {
 	db     *DB
-	logger *utils.Logger
+	logger *logger.Logger
 }
 
-func NewStrategyRepository(db *DB, logger *utils.Logger) StrategyRepository {
+func NewStrategyRepository(db *DB, logger *logger.Logger) StrategyRepository {
 	return &strategyRepository{db: db, logger: logger}
 }
 

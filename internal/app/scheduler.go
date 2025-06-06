@@ -1,8 +1,8 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/exchange"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/service/exchange"
 	"log"
 
 	"github.com/robfig/cron/v3"
@@ -11,10 +11,10 @@ import (
 type Scheduler struct {
 	c         *cron.Cron
 	exchanges []exchange.Exchange
-	logger    *utils.Logger
+	logger    *logger.Logger
 }
 
-func NewScheduler(exchanges []exchange.Exchange, logger *utils.Logger) *Scheduler {
+func NewScheduler(exchanges []exchange.Exchange, logger *logger.Logger) *Scheduler {
 	c := cron.New(cron.WithLogger(cron.VerbosePrintfLogger(log.New(logger.Writer(), "cron: ", log.LstdFlags))))
 	return &Scheduler{
 		c:         c,

@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/utils"
@@ -13,7 +14,7 @@ type TestSetup struct {
 	db                *repositories.DB
 	repo              *repositories.Repository
 	exchanges         []exchange.Exchange
-	logger            *utils.Logger
+	logger            *logger.Logger
 	strategyService   StrategyService
 	exchangeService   ExchangeService
 	marketDataService MarketDataService

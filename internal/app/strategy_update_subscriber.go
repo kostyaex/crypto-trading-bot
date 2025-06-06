@@ -1,23 +1,22 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/trading/strategy"
 )
 
 // StrategyUpdateSubscriber представляет подписчика, который обновляет состояния стратегий
 type StrategyUpdateSubscriber struct {
-	logger              *utils.Logger
-	strategyService     services.StrategyService
-	behaviorTreeService services.BehaviorTreeService
+	logger          *logger.Logger
+	strategyService strategy.StrategyService
+	//behaviorTreeService services.BehaviorTreeService
 }
 
 // NewStrategyUpdateSubscriber создает нового подписчика для обновления состояний стратегий
-func NewStrategyUpdateSubscriber(logger *utils.Logger, strategyService services.StrategyService, behaviorTreeService services.BehaviorTreeService) *StrategyUpdateSubscriber {
+func NewStrategyUpdateSubscriber(logger *logger.Logger, strategyService strategy.StrategyService) *StrategyUpdateSubscriber {
 	return &StrategyUpdateSubscriber{
-		logger:              logger,
-		strategyService:     strategyService,
-		behaviorTreeService: behaviorTreeService,
+		logger:          logger,
+		strategyService: strategyService,
 	}
 }
 

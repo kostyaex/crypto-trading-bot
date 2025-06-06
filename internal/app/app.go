@@ -2,11 +2,12 @@ package app
 
 import (
 	"context"
-	"crypto-trading-bot/internal/config"
-	"crypto-trading-bot/internal/exchange"
-	"crypto-trading-bot/internal/repositories"
-	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/config"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/service/exchange"
+	"crypto-trading-bot/internal/service/marketdata"
+	"crypto-trading-bot/internal/trading/strategy"
 	"crypto-trading-bot/internal/web"
 	"log"
 	"os"
@@ -23,9 +24,9 @@ type App struct {
 	//trader    *trading.Trader
 	webServer         *web.Server
 	scheduler         *Scheduler
-	logger            *utils.Logger
+	logger            *logger.Logger
 	eventPublisher    *EventPublisher
-	marketDataService services.MarketDataService
+	marketDataService marketdata.MarketDataService
 }
 
 func NewApp() *App {
@@ -41,7 +42,7 @@ func NewApp() *App {
 	//     log.Fatalf("Failed to apply migrations: %v", err)
 	// }
 
-	logger := utils.NewLogger(cfg.Logging.Level)
+	logger := logger.NewLogger(cfg.Logging.Level)
 
 	exchanges := []exchange.Exchange{
 		exchange.NewBinance(cfg.Binance.APIKey, cfg.Binance.APISecret, logger),
@@ -50,24 +51,24 @@ func NewApp() *App {
 
 	repo := repositories.NewRepository(db, logger)
 
-	strategyService := services.NewStrategyService(repo)
-	behaviorTreeService := services.NewBehaviorTree(repo)
-	indicatorService := services.NewIndicatorService(repo)
-	exchangeService := services.NewEchangeService(repo, logger, exchanges)
-	marketDataService := services.NewMarketDataService(cfg, repo, logger, exchanges, exchangeService)
+	strategyService := strategy.NewStrategyService(repo)
+	//behaviorTreeService := services.NewBehaviorTree(repo)
+	//indicatorService := services.NewIndicatorService(repo)
+	exchangeService := exchange.NewEchangeService(repo, logger, exchanges)
+	marketDataService := marketdata.NewMarketDataService(cfg, repo, logger, exchanges, exchangeService)
 
 	//trader := trading.NewTrader(repo, exchanges, logger)
 	webServer := web.NewServer(strconv.Itoa(cfg.Web.Port), repo, logger, exchangeService, strategyService, marketDataService)
 	scheduler := NewScheduler(exchanges, logger)
 	eventPublisher := NewEventPublisher()
 
-	// Создание подписчика для анализа данных
-	dataAnalysisSubscriber := NewDataAnalysisSubscriber(logger, eventPublisher, marketDataService, indicatorService)
-	eventPublisher.Subscribe(dataAnalysisSubscriber)
+	// // Создание подписчика для анализа данных
+	// dataAnalysisSubscriber := NewDataAnalysisSubscriber(logger, eventPublisher, marketDataService, indicatorService)
+	// eventPublisher.Subscribe(dataAnalysisSubscriber)
 
-	// Создание подписчика для обновления состояния стратегий
-	strategyUpdateSubscriber := NewStrategyUpdateSubscriber(logger, strategyService, behaviorTreeService)
-	eventPublisher.Subscribe(strategyUpdateSubscriber)
+	// // Создание подписчика для обновления состояния стратегий
+	// strategyUpdateSubscriber := NewStrategyUpdateSubscriber(logger, strategyService, behaviorTreeService)
+	// eventPublisher.Subscribe(strategyUpdateSubscriber)
 
 	return &App{
 		cfg:       cfg,

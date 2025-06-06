@@ -1,8 +1,8 @@
 package exchange
 
 import (
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,7 +16,7 @@ type Huobi struct {
 	apiSecret string
 }
 
-func NewHuobi(apiKey, apiSecret string, logger *utils.Logger) *Huobi {
+func NewHuobi(apiKey, apiSecret string, logger *logger.Logger) *Huobi {
 	return &Huobi{
 		exchangeBase: exchangeBase{name: "Huobi", logger: logger},
 		baseURL:      "https://api.huobi.pro",

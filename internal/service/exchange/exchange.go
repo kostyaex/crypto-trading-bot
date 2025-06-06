@@ -1,8 +1,8 @@
 package exchange
 
 import (
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/utils"
 	"time"
 )
 
@@ -13,7 +13,7 @@ type Exchange interface {
 
 type exchangeBase struct {
 	name   string
-	logger *utils.Logger
+	logger *logger.Logger
 }
 
 func (e *exchangeBase) GetName() string {

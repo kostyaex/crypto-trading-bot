@@ -1,16 +1,16 @@
 package handlers
 
 import (
-	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/trading/strategy"
 )
 
 type StrategyHandler struct {
-	strategyService services.StrategyService
-	logger          *utils.Logger
+	strategyService strategy.StrategyService
+	logger          *logger.Logger
 }
 
-func NewStrategyHandler(strategyService services.StrategyService, logger *utils.Logger) *StrategyHandler {
+func NewStrategyHandler(strategyService strategy.StrategyService, logger *logger.Logger) *StrategyHandler {
 	return &StrategyHandler{strategyService: strategyService, logger: logger}
 }
 

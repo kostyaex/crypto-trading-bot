@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"context"
-	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/core/config"
 	"fmt"
 	"time"
 

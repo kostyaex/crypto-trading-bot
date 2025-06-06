@@ -19,11 +19,11 @@ type {{ .ModelName }}Repository interface {
 // {{ .ModelNameLower }}Repository реализует {{ .ModelName }}Repository.
 type {{ .ModelNameLower }}Repository struct {
     db     *DB
-    logger *utils.Logger
+    logger *logger.Logger
 }
 
 // New{{ .ModelName }}Repository создает новый экземпляр {{ .ModelName }}Repository.
-func New{{ .ModelName }}Repository(db *DB, logger *utils.Logger) {{ .ModelName }}Repository {
+func New{{ .ModelName }}Repository(db *DB, logger *logger.Logger) {{ .ModelName }}Repository {
     return &{{ .ModelNameLower }}Repository{db: db, logger: logger}
 }
 

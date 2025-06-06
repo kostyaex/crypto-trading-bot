@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto-trading-bot/internal/calc"
 	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/repositories"
@@ -37,14 +38,14 @@ type WavesCollection struct {
 type marketDataService struct {
 	conf            *config.Config
 	repo            *repositories.Repository
-	logger          *utils.Logger
+	logger          *logger.Logger
 	exchanges       []exchange.Exchange
 	exchangeService ExchangeService
 	mu              sync.Mutex
 	lastTime        time.Time
 }
 
-func NewMarketDataService(conf *config.Config, repo *repositories.Repository, logger *utils.Logger, exchanges []exchange.Exchange, exchangeService ExchangeService) MarketDataService {
+func NewMarketDataService(conf *config.Config, repo *repositories.Repository, logger *logger.Logger, exchanges []exchange.Exchange, exchangeService ExchangeService) MarketDataService {
 	return &marketDataService{
 		conf:            conf,
 		repo:            repo,

@@ -4,9 +4,11 @@ package web
 
 import (
 	"context"
-	"crypto-trading-bot/internal/repositories"
-	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/service/exchange"
+	"crypto-trading-bot/internal/service/marketdata"
+	"crypto-trading-bot/internal/trading/strategy"
 	"crypto-trading-bot/internal/web/handlers"
 
 	//"crypto-trading-bot/internal/trading"
@@ -21,7 +23,7 @@ type Server struct {
 	port   string
 	router *mux.Router
 	// repo   *repositories.Repository
-	logger *utils.Logger
+	logger *logger.Logger
 	//trader *trading.Trader
 	server *http.Server
 	// strategyService   services.StrategyService
@@ -32,7 +34,7 @@ type Server struct {
 	marketDataHandler *handlers.MarketDataHandler
 }
 
-func NewServer(port string, repo *repositories.Repository, logger *utils.Logger, exchangeService services.ExchangeService, strategyService services.StrategyService, marketDataService services.MarketDataService) *Server {
+func NewServer(port string, repo *repositories.Repository, logger *logger.Logger, exchangeService exchange.ExchangeService, strategyService strategy.StrategyService, marketDataService marketdata.MarketDataService) *Server {
 	router := mux.NewRouter()
 
 	resourcesHandler := handlers.NewResourcesHandler(logger)

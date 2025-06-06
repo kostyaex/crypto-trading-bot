@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/service/exchange"
+	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/web/ui"
 	"encoding/json"
 	"fmt"
@@ -12,13 +13,13 @@ import (
 
 // MarketDataHandler обрабатывает запросы, связанные с рыночными данными.
 type MarketDataHandler struct {
-	marketDataService services.MarketDataService
-	exchangeService   services.ExchangeService
-	logger            *utils.Logger
+	marketDataService marketdata.MarketDataService
+	exchangeService   exchange.ExchangeService
+	logger            *logger.Logger
 }
 
 // NewMarketDataHandler создает новый экземпляр MarketDataHandler.
-func NewMarketDataHandler(marketDataService services.MarketDataService, exchangeService services.ExchangeService, logger *utils.Logger) *MarketDataHandler {
+func NewMarketDataHandler(marketDataService marketdata.MarketDataService, exchangeService exchange.ExchangeService, logger *logger.Logger) *MarketDataHandler {
 	return &MarketDataHandler{
 		marketDataService: marketDataService,
 		exchangeService:   exchangeService,
@@ -74,7 +75,8 @@ func (h *MarketDataHandler) PostRunBacktesting(w http.ResponseWriter, r *http.Re
 	fmt.Println("Start:", start)
 	fmt.Println("Stop:", stop)
 
-	results := h.marketDataService.RunBacktesting(start, stop)
+	//results := h.marketDataService.RunBacktesting(start, stop)
+	results := "{}"
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(results); err != nil {

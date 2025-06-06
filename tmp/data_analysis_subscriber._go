@@ -2,21 +2,21 @@ package app
 
 import (
 	"crypto-trading-bot/internal/analysis"
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/services"
-	"crypto-trading-bot/internal/utils"
 )
 
 // DataAnalysisSubscriber представляет подписчика, который анализирует данные
 type DataAnalysisSubscriber struct {
-	logger            *utils.Logger
+	logger            *logger.Logger
 	eventPublisher    *EventPublisher
 	marketDataService services.MarketDataService
 	indicatorService  services.IndicatorService
 }
 
 // NewDataAnalysisSubscriber создает нового подписчика для анализа данных
-func NewDataAnalysisSubscriber(logger *utils.Logger, eventPublisher *EventPublisher, marketDataService services.MarketDataService, indicatorService services.IndicatorService) *DataAnalysisSubscriber {
+func NewDataAnalysisSubscriber(logger *logger.Logger, eventPublisher *EventPublisher, marketDataService services.MarketDataService, indicatorService services.IndicatorService) *DataAnalysisSubscriber {
 	return &DataAnalysisSubscriber{
 		logger:            logger,
 		eventPublisher:    eventPublisher,

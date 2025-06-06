@@ -1,7 +1,7 @@
 package config
 
 import (
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/utils"
 	"fmt"
 	"log"
 	"os"

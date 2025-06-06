@@ -1,7 +1,7 @@
 package models
 
 import (
-	"crypto-trading-bot/internal/utils"
+	"crypto-trading-bot/internal/core/utils"
 	"encoding/json"
 
 	"github.com/mitchellh/mapstructure"

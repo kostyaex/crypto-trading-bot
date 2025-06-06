@@ -1,8 +1,8 @@
 package exchange
 
 import (
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,7 +16,7 @@ type Binance struct {
 	//client *binance.Client
 }
 
-func NewBinance(apiKey, apiSecret string, logger *utils.Logger) *Binance {
+func NewBinance(apiKey, apiSecret string, logger *logger.Logger) *Binance {
 	//client := binance.NewClient(apiKey, apiSecret)
 	return &Binance{
 		exchangeBase: exchangeBase{name: "Binance", logger: logger},
