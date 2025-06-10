@@ -1,14 +1,16 @@
 package series
 
 import (
+	"crypto-trading-bot/internal/models"
 	"fmt"
 	"time"
 )
 
 type Point struct {
-	Value  float64
-	Weight float64
-	Time   time.Time
+	Value      float64
+	Weight     float64
+	Time       time.Time
+	MarketData *models.MarketData // основание по которому формировалась точка
 }
 
 type Series struct {
