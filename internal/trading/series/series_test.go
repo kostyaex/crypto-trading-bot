@@ -1,23 +1,12 @@
 package series
 
 import (
-	"context"
 	"fmt"
-	"net"
-	"net/http"
 	"testing"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func TestNewSeriesBuilder(t *testing.T) {
-
-	// Запускаем HTTP сервер для /metrics на свободном порту
-	srv := &http.Server{Addr: ":6060", Handler: promhttp.Handler()}
-	listener, _ := net.Listen("tcp", "127.0.0.1:6060")
-	go srv.Serve(listener)
-	defer srv.Shutdown(context.Background())
 
 	// Пример конфигурации
 	config := map[string]interface{}{
