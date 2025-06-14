@@ -1,8 +1,12 @@
 package models
 
 import (
+	"fmt"
+	"strings"
 	"time"
 )
+
+const TimeFormat string = "02.01.2006 15:04:05"
 
 // MarketDataStatus представляет модель MarketDataStatus.
 type MarketDataStatus struct {
@@ -17,15 +21,38 @@ type MarketDataStatus struct {
 
 // MarketData представляет модель данных о рынке.
 type MarketData struct {
-	Timestamp  time.Time `db:"timestamp"`
-	Exchange   string    `db:"exchange"`
-	Symbol     string    `db:"symbol"`
-	TimeFrame  string    `db:"time_frame"`
-	OpenPrice  float64   `db:"open_price"`
-	ClosePrice float64   `db:"close_price"`
-	Volume     float64   `db:"volume"`
-	BuyVolume  float64   `db:"buy_volume"`
-	SellVolume float64   `db:"sell_volume"`
+	Timestamp    time.Time `db:"timestamp"`
+	Exchange     string    `db:"exchange"`
+	Symbol       string    `db:"symbol"`
+	TimeFrame    string    `db:"time_frame"`
+	OpenPrice    float64   `db:"open_price"`
+	ClosePrice   float64   `db:"close_price"`
+	ClusterPrice float64   `db:"cluster_price"`
+	Volume       float64   `db:"volume"`
+	BuyVolume    float64   `db:"buy_volume"`
+	SellVolume   float64   `db:"sell_volume"`
+}
+
+func (md MarketData) String() string {
+	return fmt.Sprintf(
+		"%s %s %8.2f %8.2f %8.2f %8.2f %8.2f",
+		md.Timestamp.Format(TimeFormat),
+		md.TimeFrame,
+		md.OpenPrice,
+		md.ClosePrice,
+		md.ClusterPrice,
+		md.BuyVolume,
+		md.SellVolume)
+}
+
+func MarketDataToString(md []MarketData) string {
+	var s strings.Builder
+
+	for _, md1 := range md {
+		s.WriteString(md1.String() + "\n")
+	}
+
+	return s.String()
 }
 
 // type ClusterData struct {
