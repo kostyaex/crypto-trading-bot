@@ -1,4 +1,4 @@
-package calc
+package clusters
 
 import (
 	"crypto-trading-bot/internal/models"
@@ -36,7 +36,7 @@ func Test_ClusterMarketData(t *testing.T) {
 
 	// Подготовка тестовых данных
 	now, _ := time.Parse(time.RFC3339, "2025-01-05T00:00:00Z") //time.Now()
-	testData := []models.MarketData{
+	testData := []*models.MarketData{
 		{Timestamp: now, TimeFrame: "1m", ClosePrice: 100, Volume: 10, BuyVolume: 6, SellVolume: 4},
 		{Timestamp: now.Add(time.Minute), TimeFrame: "1m", ClosePrice: 105, Volume: 20, BuyVolume: 22, SellVolume: 18},
 		{Timestamp: now.Add(2 * time.Minute), TimeFrame: "1m", ClosePrice: 103, Volume: 15, BuyVolume: 7, SellVolume: 8},

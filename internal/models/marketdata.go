@@ -45,7 +45,7 @@ func (md MarketData) String() string {
 		md.SellVolume)
 }
 
-func MarketDataToString(md []MarketData) string {
+func MarketDataToString(md []*MarketData) string {
 	var s strings.Builder
 
 	for _, md1 := range md {

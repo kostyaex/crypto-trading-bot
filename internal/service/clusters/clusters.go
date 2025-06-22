@@ -1,4 +1,4 @@
-package calc
+package clusters
 
 import (
 	"crypto-trading-bot/internal/models"
@@ -9,7 +9,7 @@ import (
 type WeightedPoint struct {
 	Value      float64 `json:"value"`
 	Weight     float64 `json:"weight"`
-	MarketData models.MarketData
+	MarketData *models.MarketData
 	//Cluster int
 }
 
@@ -18,9 +18,9 @@ type Cluster struct {
 	Points []WeightedPoint
 }
 
-func ClusterMarketData(interval []models.MarketData, timeframe string, numClusters int) []models.MarketData {
+func ClusterMarketData(interval []*models.MarketData, timeframe string, numClusters int) []*models.MarketData {
 
-	result := make([]models.MarketData, 0)
+	result := make([]*models.MarketData, 0)
 
 	points := make([]WeightedPoint, len(interval))
 
@@ -55,7 +55,7 @@ func ClusterMarketData(interval []models.MarketData, timeframe string, numCluste
 			md.Volume += p.MarketData.SellVolume
 		}
 
-		result = append(result, md)
+		result = append(result, &md)
 	}
 
 	return result

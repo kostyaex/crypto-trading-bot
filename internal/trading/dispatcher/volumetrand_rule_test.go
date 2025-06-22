@@ -2,7 +2,7 @@ package dispatcher
 
 import (
 	"crypto-trading-bot/internal/models"
-	"crypto-trading-bot/internal/trading/series"
+	"crypto-trading-bot/internal/service/series"
 	"testing"
 	"time"
 

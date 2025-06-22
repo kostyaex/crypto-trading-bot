@@ -1,6 +1,6 @@
 package dispatcher
 
-import "crypto-trading-bot/internal/trading/series"
+import "crypto-trading-bot/internal/service/series"
 
 type VolumeTrendRule struct {
 	MinVolumeChangePercent float64 // минимальный процент изменения объема
