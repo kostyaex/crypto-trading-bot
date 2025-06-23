@@ -126,9 +126,13 @@ func Test_runStrategyForSource(t *testing.T) {
 		return
 	}
 
-	disp := dispatcher.NewSignalDispatcher(
+	disp := dispatcher.NewDispatcher(
 		&dispatcher.VolumeTrendRule{MinVolumeChangePercent: 10},
 	)
+
+	disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
+	disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
+	disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
 
 	// Вызов тестируемой функции
 	err = runStrategyForSource(*strategy, source, disp)

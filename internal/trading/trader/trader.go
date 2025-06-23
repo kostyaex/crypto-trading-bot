@@ -28,7 +28,7 @@ func groupStrategiesBySymbolInterval(strategies []models.Strategy) map[string][]
 func runStrategyForSource(
 	strategy models.Strategy,
 	source sources.MarketDataSource,
-	dispatcher *dispatcher.SignalDispatcher,
+	dispatcher *dispatcher.Dispatcher,
 ) error {
 	defer source.Close()
 

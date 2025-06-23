@@ -28,19 +28,42 @@ type SignalRule interface {
 	Evaluate(series *series.Series) (TradeSignal, bool)
 }
 
-type SignalDispatcher struct {
-	rules []SignalRule
+type ActionHandler interface {
+	Handle(signal TradeSignal)
 }
 
-func NewSignalDispatcher(rules ...SignalRule) *SignalDispatcher {
-	return &SignalDispatcher{rules: rules}
+type ActionHandlerFunc func(signal TradeSignal)
+
+type Dispatcher struct {
+	rules    []SignalRule
+	handlers map[SignalType][]ActionHandler
 }
 
-func (d *SignalDispatcher) Dispatch(series *series.Series) (TradeSignal, bool) {
+func NewDispatcher(rules ...SignalRule) *Dispatcher {
+	return &Dispatcher{
+		rules:    rules,
+		handlers: make(map[SignalType][]ActionHandler),
+	}
+}
+
+// Регистрация обработчика
+func (d *Dispatcher) Register(signalType SignalType, handler ActionHandler) {
+	d.handlers[signalType] = append(d.handlers[signalType], handler)
+}
+
+func (d *Dispatcher) Dispatch(series *series.Series) {
+
+	resultSignal := TradeSignal{Type: SignalHold}
+
 	for _, rule := range d.rules {
 		if signal, ok := rule.Evaluate(series); ok {
-			return signal, true
+			resultSignal = signal
+			break
 		}
 	}
-	return TradeSignal{Type: SignalHold}, false
+
+	for _, handler := range d.handlers[resultSignal.Type] {
+		handler.Handle(resultSignal)
+	}
+
 }
