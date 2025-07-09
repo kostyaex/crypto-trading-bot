@@ -11,11 +11,12 @@ func (r *VolumeTrendRule) Evaluate(series *series.Series) (TradeSignal, bool) {
 		return TradeSignal{Type: SignalHold}, false
 	}
 
-	first := series.Points[0]
+	// берем последние 2 значения в серии
+	prev := series.Points[len(series.Points)-2]
 	last := series.Points[len(series.Points)-1]
 
-	buyVolChange := (last.MarketData.BuyVolume - first.MarketData.BuyVolume) / first.MarketData.BuyVolume * 100
-	sellVolChange := (last.MarketData.SellVolume - first.MarketData.SellVolume) / first.MarketData.SellVolume * 100
+	buyVolChange := (last.MarketData.BuyVolume - prev.MarketData.BuyVolume) / prev.MarketData.BuyVolume * 100
+	sellVolChange := (last.MarketData.SellVolume - prev.MarketData.SellVolume) / prev.MarketData.SellVolume * 100
 
 	signal := TradeSignal{
 		Timestamp:  last.MarketData.Timestamp,

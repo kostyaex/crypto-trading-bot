@@ -15,11 +15,11 @@ import (
 func Test_GroupingAndBroadcasting(t *testing.T) {
 	// Создаем тестовые данные
 	strategiesSettings := []models.StrategySettings{
-		{Symbol: "BTCUSDT", Interval: "1m", Waves: models.StrategyWavesSettings{BlockSize: 5, Overlap: 4}},
-		{Symbol: "BTCUSDT", Interval: "1m", Waves: models.StrategyWavesSettings{BlockSize: 10, Overlap: 2}},
-		{Symbol: "ETHUSDT", Interval: "5m", Waves: models.StrategyWavesSettings{BlockSize: 8, Overlap: 3}},
-		{Symbol: "ETHUSDT", Interval: "5m", Waves: models.StrategyWavesSettings{BlockSize: 6, Overlap: 1}},
-		{Symbol: "BTCUSDT", Interval: "5m", Waves: models.StrategyWavesSettings{BlockSize: 7, Overlap: 3}},
+		{Symbol: "BTCUSDT", Interval: "1m"},
+		{Symbol: "BTCUSDT", Interval: "1m"},
+		{Symbol: "ETHUSDT", Interval: "5m"},
+		{Symbol: "ETHUSDT", Interval: "5m"},
+		{Symbol: "BTCUSDT", Interval: "5m"},
 	}
 
 	strategies := make([]models.Strategy, 0)
@@ -107,11 +107,21 @@ func Test_runStrategyForSource(t *testing.T) {
 	// Подготовка тестовых данных
 	now, _ := time.Parse(time.RFC3339, "2025-01-05T00:00:00Z") //time.Now()
 	testData := []*models.MarketData{
-		{Timestamp: now, OpenPrice: 100, Volume: 10},
-		{Timestamp: now.Add(time.Minute), OpenPrice: 105, Volume: 20},
-		{Timestamp: now.Add(2 * time.Minute), OpenPrice: 103, Volume: 15},
-		{Timestamp: now.Add(3 * time.Minute), OpenPrice: 107, Volume: 25},
-		{Timestamp: now.Add(4 * time.Minute), OpenPrice: 108, Volume: 30},
+		{Timestamp: now, ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now, ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now, ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now, ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now, ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(time.Minute), ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(time.Minute), ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(time.Minute), ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(time.Minute), ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(time.Minute), ClosePrice: 100, Volume: 10, BuyVolume: 5, SellVolume: 5, Symbol: "TEST"},
+		{Timestamp: now.Add(2 * time.Minute), ClosePrice: 100, Volume: 20, BuyVolume: 5, SellVolume: 15, Symbol: "TEST"},
+		{Timestamp: now.Add(2 * time.Minute), ClosePrice: 100, Volume: 20, BuyVolume: 5, SellVolume: 15, Symbol: "TEST"},
+		{Timestamp: now.Add(2 * time.Minute), ClosePrice: 100, Volume: 20, BuyVolume: 5, SellVolume: 15, Symbol: "TEST"},
+		{Timestamp: now.Add(2 * time.Minute), ClosePrice: 100, Volume: 20, BuyVolume: 5, SellVolume: 15, Symbol: "TEST"},
+		{Timestamp: now.Add(2 * time.Minute), ClosePrice: 100, Volume: 20, BuyVolume: 5, SellVolume: 15, Symbol: "TEST"},
 	}
 
 	source := NewMockMarketDataSource(testData)
@@ -120,7 +130,8 @@ func Test_runStrategyForSource(t *testing.T) {
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1m",
-			Waves:    models.StrategyWavesSettings{BlockSize: 3, Overlap: 2, NumClusters: 2}})
+			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 5, Interval: "5m"}})
+
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)
 		return
@@ -132,7 +143,7 @@ func Test_runStrategyForSource(t *testing.T) {
 
 	disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
 	disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
-	disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
+	//disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
 
 	// Вызов тестируемой функции
 	err = runStrategyForSource(*strategy, source, disp)

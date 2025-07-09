@@ -52,7 +52,7 @@ func ClusterMarketData(interval []*models.MarketData, timeframe string, numClust
 			md.BuyVolume += p.MarketData.BuyVolume
 			md.Volume += p.MarketData.BuyVolume
 			md.SellVolume += p.MarketData.SellVolume
-			md.Volume += p.MarketData.SellVolume
+			md.Volume += p.MarketData.Volume
 		}
 
 		result = append(result, &md)

@@ -19,15 +19,15 @@ type Strategy struct {
 // для добавления полей в интерактивное поле см strategy_settings_field.templ
 
 type StrategySettings struct {
-	Symbol   string                `mapstructure:"symbol"`   // используемая пара
-	Interval string                `mapstructure:"interval"` // используемый интервал
-	Waves    StrategyWavesSettings `mapstructure:"waves"`
+	Symbol   string          `mapstructure:"symbol"`   // используемая пара
+	Interval string          `mapstructure:"interval"` // используемый интервал для выборки данных биржи
+	Cluster  ClusterSettings `mapstructure:"cluster"`
 }
 
-type StrategyWavesSettings struct {
-	NumClusters int `mapstructure:"num_clusters"`
-	BlockSize   int `mapstructure:"block_size"`
-	Overlap     int `mapstructure:"overlap"`
+type ClusterSettings struct {
+	NumClusters int    `mapstructure:"num_clusters"`
+	Block       int    `mapstructure:"block"`    // сколько записей торговых данных группировать в кластер
+	Interval    string `mapstructure:"interval"` // результирующий интервал сгруппированных записей
 }
 
 // type WawesSettings struct {

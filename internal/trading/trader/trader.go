@@ -42,7 +42,7 @@ func runStrategyForSource(
 	// Разбиваем полученные торговые данные на интевалы по настройкам из стратегии
 	intervalsCh := make(chan []*models.MarketData)
 	go func() {
-		utils.SplitChannelWithOverlap(marketDataCh, strategySettings.Waves.BlockSize, strategySettings.Waves.Overlap, intervalsCh)
+		utils.SplitChannelWithOverlap(marketDataCh, strategySettings.Cluster.Block, 0, intervalsCh)
 		//close(intervalsCh)
 	}()
 
@@ -61,7 +61,7 @@ func runStrategyForSource(
 	var activeSeries []series.Series
 
 	for interval := range intervalsCh {
-		clusteredMd := clusters.ClusterMarketData(interval, "1h", 5)
+		clusteredMd := clusters.ClusterMarketData(interval, strategySettings.Cluster.Interval, strategySettings.Cluster.NumClusters)
 		var points []series.Point
 		for _, md := range clusteredMd {
 			point := series.Point{
