@@ -21,7 +21,7 @@ func (r *VolumeTrendRule) Evaluate(series *series.Series) (TradeSignal, bool) {
 	signal := TradeSignal{
 		Timestamp:  last.MarketData.Timestamp,
 		Symbol:     last.MarketData.Symbol,
-		Price:      last.MarketData.ClosePrice,
+		Price:      last.MarketData.ClusterPrice,
 		Volume:     last.MarketData.Volume,
 		BuyVolume:  last.MarketData.BuyVolume,
 		SellVolume: last.MarketData.SellVolume,

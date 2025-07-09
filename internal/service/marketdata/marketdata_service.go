@@ -20,6 +20,7 @@ type MarketDataService interface {
 	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
 	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
 	RunSchudeler(ctx context.Context)
+	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error)
 }
 
 type marketDataService struct {
@@ -177,4 +178,8 @@ func (s *marketDataService) GetMarketDataStatusList() ([]*models.MarketDataStatu
 		return nil, err
 	}
 	return marketdatastatus, nil
+}
+
+func (s *marketDataService) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error) {
+	return s.repo.MarketData.GetMarketDataPeriod(symbol, interval, start, end)
 }

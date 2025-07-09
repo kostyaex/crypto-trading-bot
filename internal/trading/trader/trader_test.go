@@ -1,16 +1,66 @@
 package trader
 
 import (
+	"crypto-trading-bot/internal/core/config"
+	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/core/repositories"
 	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/service/marketdata/sources"
 	"crypto-trading-bot/internal/trading/dispatcher"
+	"log"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type TestSetup struct {
+	//exchanges         []exchange.Exchange
+	//exchangeService   exchange.ExchangeService
+	//marketDataService marketdata.MarketDataService
+	//strategyService   StrategyService
+	traderService TraderService
+}
+
+// NewTestSetup инициализирует все необходимые зависимости для тестов
+func NewTestSetup() *TestSetup {
+	cfg := config.LoadConfig()
+
+	db, err := repositories.NewDB(cfg)
+
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	logger := logger.NewLogger(cfg.Logging.Level)
+
+	exchanges := []exchange.Exchange{
+		exchange.NewBinance(cfg.Binance.APIKey, cfg.Binance.APISecret, logger),
+		//exchange.NewHuobi(cfg.Huobi.APIKey, cfg.Huobi.APISecret, logger),
+	}
+
+	repo := repositories.NewRepository(db, logger)
+
+	exchangeService := exchange.NewEchangeService(repo, logger, exchanges)
+
+	marketDataService := marketdata.NewMarketDataService(cfg, repo, logger, exchanges, exchangeService)
+
+	//strategyService := NewStrategyService(repo)
+
+	traderService := NewTraderService(logger, marketDataService)
+
+	return &TestSetup{
+		//exchanges:         exchanges,
+		//exchangeService:   exchangeService,
+		//marketDataService: marketDataService,
+		//strategyService:   strategyService,
+		traderService: traderService,
+	}
+
+}
 
 func Test_GroupingAndBroadcasting(t *testing.T) {
 	// Создаем тестовые данные
@@ -79,27 +129,6 @@ func Test_GroupingAndBroadcasting(t *testing.T) {
 
 }
 
-type MockMarketDataSource struct {
-	data []*models.MarketData
-}
-
-func NewMockMarketDataSource(data []*models.MarketData) *MockMarketDataSource {
-	return &MockMarketDataSource{data: data}
-}
-
-func (m *MockMarketDataSource) GetMarketDataCh() <-chan *models.MarketData {
-	ch := make(chan *models.MarketData)
-	go func() {
-		for _, item := range m.data {
-			ch <- item
-		}
-		close(ch)
-	}()
-	return ch
-}
-
-func (m *MockMarketDataSource) Close() {}
-
 func Test_runStrategyForSource(t *testing.T) {
 
 	//setup := NewTestSetup()
@@ -155,4 +184,23 @@ func Test_runStrategyForSource(t *testing.T) {
 	// // Проверяем, что результаты содержат ожидаемое количество волн
 	// assert.NotEmpty(t, results)
 	// assert.Contains(t, results[0].Log, "Waves:")
+}
+
+func TestTraderService_RunBacktesting(t *testing.T) {
+	setup := NewTestSetup()
+
+	strategy, err := models.NewStrategy("test-strategy", "",
+		models.StrategySettings{
+			Symbol:   "BTCUSDT",
+			Interval: "1s",
+			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 60, Interval: "1m"}})
+	if err != nil {
+		t.Errorf("Ошибка создания новой стратегии %v", err)
+		return
+	}
+
+	startTime, _ := time.Parse(time.RFC3339, "2025-01-05T01:00:00Z")
+	stopTime, _ := time.Parse(time.RFC3339, "2025-01-05T02:00:00Z") //
+
+	setup.traderService.RunBacktesting(strategy, startTime, stopTime)
 }

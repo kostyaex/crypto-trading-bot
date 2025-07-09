@@ -1,14 +1,54 @@
 package trader
 
 import (
+	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/utils"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/clusters"
+	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/service/marketdata/sources"
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
 	"fmt"
+	"time"
 )
+
+type TraderService interface {
+	RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time)
+}
+
+type traderService struct {
+	logger            *logger.Logger
+	marketDataService marketdata.MarketDataService
+}
+
+func NewTraderService(logger *logger.Logger, marketDataService marketdata.MarketDataService) TraderService {
+	return &traderService{
+		logger:            logger,
+		marketDataService: marketDataService,
+	}
+}
+
+type MockMarketDataSource struct {
+	data []*models.MarketData
+}
+
+func NewMockMarketDataSource(data []*models.MarketData) *MockMarketDataSource {
+	return &MockMarketDataSource{data: data}
+}
+
+func (m *MockMarketDataSource) GetMarketDataCh() <-chan *models.MarketData {
+	ch := make(chan *models.MarketData)
+	go func() {
+		for _, item := range m.data {
+			ch <- item
+		}
+		close(ch)
+	}()
+	return ch
+}
+
+func (m *MockMarketDataSource) Close() {}
 
 // Функция распределения данных по группам
 func groupStrategiesBySymbolInterval(strategies []models.Strategy) map[string][]models.Strategy {
@@ -81,4 +121,38 @@ func runStrategyForSource(
 	}
 
 	return nil
+}
+
+func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time) {
+
+	strategySettings, err := strategy.Settings()
+	if err != nil {
+		s.logger.Errorf("Ошибка создания новой стратегии %v", err)
+		return
+	}
+
+	// Получить данные за период
+	marketData, err := s.marketDataService.GetMarketDataPeriod(strategySettings.Symbol, strategySettings.Interval, startTime, endTime)
+	//	marketData, err := s.GetMarketData("BTCUSDT", 1000)
+	if err != nil {
+		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
+		return
+	}
+
+	source := NewMockMarketDataSource(marketData)
+
+	disp := dispatcher.NewDispatcher(
+		&dispatcher.VolumeTrendRule{MinVolumeChangePercent: 10},
+	)
+
+	disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
+	disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
+	//disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
+
+	// Вызов тестируемой функции
+	err = runStrategyForSource(*strategy, source, disp)
+	if err != nil {
+		s.logger.Errorf("Ошибка выполнения RunStrategyForSource %v", err)
+		return
+	}
 }
