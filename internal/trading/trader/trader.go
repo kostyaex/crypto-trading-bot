@@ -115,7 +115,14 @@ func runStrategyForSource(
 
 		activeSeries = builder.AddPoints(activeSeries, points)
 
+		// здесь надо отфильтровать серии, выбрать только серии которые были обновлены на этой итерации
 		for _, sr := range activeSeries {
+			// проверяем последнюю точку серии
+			last := sr.Last()
+			if last == nil || last.Time.Before(clusteredMd[0].Timestamp) {
+				continue
+			}
+
 			dispatcher.Dispatch(&sr)
 		}
 	}

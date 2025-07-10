@@ -6,14 +6,15 @@ import (
 )
 
 type TradeSignal struct {
-	Timestamp  time.Time
-	Symbol     string
-	Price      float64
-	Volume     float64
-	BuyVolume  float64
-	SellVolume float64
-	Type       SignalType
-	Series     *series.Series
+	Timestamp   time.Time
+	Symbol      string
+	Price       float64
+	Volume      float64
+	BuyVolume   float64
+	SellVolume  float64
+	Type        SignalType
+	Series      *series.Series
+	Description string
 }
 
 type SignalType string

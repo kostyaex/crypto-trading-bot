@@ -19,13 +19,14 @@ func (r *VolumeTrendRule) Evaluate(series *series.Series) (TradeSignal, bool) {
 	sellVolChange := (last.MarketData.SellVolume - prev.MarketData.SellVolume) / prev.MarketData.SellVolume * 100
 
 	signal := TradeSignal{
-		Timestamp:  last.MarketData.Timestamp,
-		Symbol:     last.MarketData.Symbol,
-		Price:      last.MarketData.ClusterPrice,
-		Volume:     last.MarketData.Volume,
-		BuyVolume:  last.MarketData.BuyVolume,
-		SellVolume: last.MarketData.SellVolume,
-		Series:     series,
+		Timestamp:   last.MarketData.Timestamp,
+		Symbol:      last.MarketData.Symbol,
+		Price:       last.MarketData.ClusterPrice,
+		Volume:      last.MarketData.Volume,
+		BuyVolume:   last.MarketData.BuyVolume,
+		SellVolume:  last.MarketData.SellVolume,
+		Series:      series,
+		Description: "volumetrandrule | " + series.String(),
 	}
 
 	// Проверяем условия
