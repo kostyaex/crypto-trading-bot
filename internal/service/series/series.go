@@ -2,19 +2,21 @@ package series
 
 import (
 	"crypto-trading-bot/internal/models"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 )
 
 type Point struct {
-	Value      float64
-	Weight     float64
-	Time       time.Time
-	MarketData *models.MarketData // основание по которому формировалась точка
+	Value      float64            `json:"value"`
+	Weight     float64            `json:"weight"`
+	Time       time.Time          `json:"time"`
+	MarketData *models.MarketData `json:"market_data"` // основание по которому формировалась точка
 }
 
 type Series struct {
-	Points []Point
+	Points []Point `json:"points"`
 }
 
 // Возвращает первую точку
@@ -84,4 +86,29 @@ func NewSeriesBuilder(config map[string]interface{}) (SeriesBuilder, error) {
 	default:
 		return nil, fmt.Errorf("неизвестный тип стратегии: %s", builderType)
 	}
+}
+
+func SaveSeries(series []Series, filePath string) {
+	// Кодируем массив структур в JSON
+	jsonData, err := json.MarshalIndent(series, "", "	")
+	if err != nil {
+		fmt.Println("Ошибка кодирования в JSON:", err)
+		return
+	}
+
+	// Записываем JSON в файл
+	file, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println("Ошибка создания файла:", err)
+		return
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonData)
+	if err != nil {
+		fmt.Printf("Ошибка записи в файл:%s\n", err)
+		return
+	}
+
+	fmt.Printf("JSON записан в файл %s\n", filePath)
 }

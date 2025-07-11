@@ -193,14 +193,14 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 60, Interval: "1m"}})
+			Cluster:  models.ClusterSettings{NumClusters: 5, Block: 60, Interval: "1m"}})
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)
 		return
 	}
 
-	startTime, _ := time.Parse(time.DateTime, "2025-01-05 00:00:00")
-	stopTime, _ := time.Parse(time.DateTime, "2025-01-06 01:00:00") //
+	startTime, _ := time.Parse(time.DateTime, "2025-03-01 00:00:00")
+	stopTime, _ := time.Parse(time.DateTime, "2025-03-02 00:00:00") //
 
 	setup.traderService.RunBacktesting(strategy, startTime, stopTime)
 }

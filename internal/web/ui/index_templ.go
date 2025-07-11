@@ -42,7 +42,7 @@ func headerComponent(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"//unpkg.com/alpinejs\" defer></script><link rel=\"stylesheet\" href=\"/assets/styles/app.css\"></head>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</title><script src=\"//unpkg.com/alpinejs\" defer></script><script src=\"https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js\"></script><link rel=\"stylesheet\" href=\"/assets/styles/app.css\"></head>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
