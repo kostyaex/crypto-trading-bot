@@ -32,6 +32,7 @@ type Server struct {
 	resourcesHandler  *handlers.ResourcesHandler
 	strategyHandler   *handlers.StrategyHandler
 	marketDataHandler *handlers.MarketDataHandler
+	traderHandler     *handlers.TraderHandler
 }
 
 func NewServer(port string, repo *repositories.Repository, logger *logger.Logger, exchangeService exchange.ExchangeService, strategyService strategy.StrategyService, marketDataService marketdata.MarketDataService) *Server {
@@ -40,6 +41,7 @@ func NewServer(port string, repo *repositories.Repository, logger *logger.Logger
 	resourcesHandler := handlers.NewResourcesHandler(logger)
 	strategyHandler := handlers.NewStrategyHandler(strategyService, logger)
 	marketDataHandler := handlers.NewMarketDataHandler(marketDataService, exchangeService, logger)
+	traderHandler := handlers.NewTraderHandler(logger)
 
 	s := &Server{
 		port:   port,
@@ -53,6 +55,7 @@ func NewServer(port string, repo *repositories.Repository, logger *logger.Logger
 		resourcesHandler:  resourcesHandler,
 		strategyHandler:   strategyHandler,
 		marketDataHandler: marketDataHandler,
+		traderHandler:     traderHandler,
 	}
 
 	s.routes()
