@@ -86,14 +86,7 @@ func runStrategyForSource(
 		//close(intervalsCh)
 	}()
 
-	// Пример конфигурации
-	config := map[string]interface{}{
-		"type":         "simple",
-		"value_factor": 1.0,
-		"time_factor":  100.0,
-	}
-
-	builder, err := series.NewSeriesBuilder(config)
+	builder, err := series.NewSeriesBuilder(strategy.SeriesBuilderConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -129,6 +122,10 @@ func runStrategyForSource(
 
 	filename := fmt.Sprintf("/home/kostya/projects/crypto-trading-bot/data/series_%s.json", time.Now().Format("2006-01-02_15-04-05"))
 	series.SaveSeries(activeSeries, filename)
+
+	// Сбор метрик
+	metrics := series.CollectMetrics(activeSeries)
+	metrics.Print()
 
 	return nil
 }

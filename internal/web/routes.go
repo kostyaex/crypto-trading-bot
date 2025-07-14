@@ -12,6 +12,9 @@ func (s *Server) routes() {
 	fs := http.FileServer(http.Dir("./internal/web/ui/assets"))
 	s.router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 
+	fs2 := http.FileServer(http.Dir("./data"))
+	s.router.PathPrefix("/data/").Handler(http.StripPrefix("/data/", fs2))
+
 	//
 	// Определяем маршрут для проксирования запросов к PostgREST
 	//

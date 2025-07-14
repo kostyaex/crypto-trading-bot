@@ -72,9 +72,16 @@ func Test_GroupingAndBroadcasting(t *testing.T) {
 		{Symbol: "BTCUSDT", Interval: "5m"},
 	}
 
+	// Пример конфигурации
+	config := map[string]interface{}{
+		"type":         "simple",
+		"value_factor": 1.0,
+		"time_factor":  100.0,
+	}
+
 	strategies := make([]models.Strategy, 0)
 	for n, settings := range strategiesSettings {
-		strategy, err := models.NewStrategy("strat"+strconv.Itoa(n), "", settings)
+		strategy, err := models.NewStrategy("strat"+strconv.Itoa(n), "", settings, config)
 		if err != nil {
 			t.Errorf("Ошибка создания новой стратегии %v", err)
 		}
@@ -155,11 +162,19 @@ func Test_runStrategyForSource(t *testing.T) {
 
 	source := NewMockMarketDataSource(testData)
 
+	// Пример конфигурации
+	config := map[string]interface{}{
+		"type":         "simple",
+		"value_factor": 1.0,
+		"time_factor":  100.0,
+	}
+
 	strategy, err := models.NewStrategy("test-strategy", "",
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1m",
-			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 5, Interval: "5m"}})
+			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 5, Interval: "5m"}},
+		config)
 
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)
@@ -189,18 +204,27 @@ func Test_runStrategyForSource(t *testing.T) {
 func TestTraderService_RunBacktesting(t *testing.T) {
 	setup := NewTestSetup()
 
+	// Пример конфигурации
+	config := map[string]interface{}{
+		"type":         "simple",
+		"value_factor": 200.0,
+		"time_factor":  10.0,
+	}
+
 	strategy, err := models.NewStrategy("test-strategy", "",
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 5, Block: 60, Interval: "1m"}})
+			Cluster:  models.ClusterSettings{NumClusters: 10, Block: 300, Interval: "5m"}},
+		config)
+
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)
 		return
 	}
 
-	startTime, _ := time.Parse(time.DateTime, "2025-03-01 00:00:00")
-	stopTime, _ := time.Parse(time.DateTime, "2025-03-02 00:00:00") //
+	startTime, _ := time.Parse(time.DateTime, "2025-07-01 00:00:00")
+	stopTime, _ := time.Parse(time.DateTime, "2025-07-01 23:59:59") //
 
 	setup.traderService.RunBacktesting(strategy, startTime, stopTime)
 }

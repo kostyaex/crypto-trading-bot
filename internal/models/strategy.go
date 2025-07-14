@@ -9,11 +9,12 @@ import (
 
 // Strategy представляет торговую стратегию
 type Strategy struct {
-	ID          int             `db:"id"`
-	Name        string          `db:"name"`
-	Description string          `db:"description"`
-	Config      json.RawMessage `db:"config"`
-	Active      bool            `db:"active"`
+	ID                  int             `db:"id"`
+	Name                string          `db:"name"`
+	Description         string          `db:"description"`
+	Config              json.RawMessage `db:"config"`
+	Active              bool            `db:"active"`
+	SeriesBuilderConfig map[string]interface{}
 }
 
 // для добавления полей в интерактивное поле см strategy_settings_field.templ
@@ -35,7 +36,7 @@ type ClusterSettings struct {
 // }
 
 // NewStrategy создает новую торговую стратегию
-func NewStrategy(name, description string, settings StrategySettings) (*Strategy, error) {
+func NewStrategy(name, description string, settings StrategySettings, seriesBuilderConfig map[string]interface{}) (*Strategy, error) {
 
 	configJSON, err := utils.StructToJSON(settings)
 	if err != nil {
@@ -43,10 +44,11 @@ func NewStrategy(name, description string, settings StrategySettings) (*Strategy
 	}
 
 	return &Strategy{
-		Name:        name,
-		Description: description,
-		Config:      []byte(configJSON),
-		Active:      true,
+		Name:                name,
+		Description:         description,
+		Config:              []byte(configJSON),
+		Active:              true,
+		SeriesBuilderConfig: seriesBuilderConfig,
 	}, nil
 }
 

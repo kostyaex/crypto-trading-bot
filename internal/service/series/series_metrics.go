@@ -28,8 +28,8 @@ func CollectMetrics(series []Series) SeriesMetrics {
 	var totalValuesSum float64
 	m.MinValue = math.MaxFloat64
 	m.MaxValue = -math.MaxFloat64
-	m.StartTime = time.Now().Add(24 * time.Hour) // будем искать минимум
-	m.EndTime = time.Now().Add(-24 * time.Hour)  // будем искать максимум
+	m.StartTime = time.Now().Add(24 * time.Hour)           // будем искать минимум
+	m.EndTime, _ = time.Parse(time.DateOnly, "2000-01-01") // будем искать максимум
 
 	for _, s := range series {
 		length := len(s.Points)
