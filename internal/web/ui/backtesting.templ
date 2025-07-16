@@ -3,7 +3,11 @@ package ui
 templ BacktestingPage() {
     <!DOCTYPE html>
 	<html lang="en">
+    <head>
 	@headerComponent("Backtesting")
+	<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+	<script src="/assets/js/series.js"></script>
+    </head>
 	<body>
 		<div x-data="backtesting()" class="container">
             <h1>Бектестинг</h1>
@@ -24,15 +28,21 @@ templ BacktestingPage() {
 
         </div>
 
-        <div x-data="series()" class="container" x-init="">
+        <div x-data="series()" class="container">
             <button class="button" x-on:click="loadSeriesUrls">Загрузить дампы серий</button>
             <p x-text="status"></p>
             <template x-for="url in seriesUrls">
-                <button class="button" x-text="url" x-on:click="loadSeries(url)"></button>
+                <button class="button"
+                    x-text="url"
+                    x-on:click="loadSeries(url)"
+                    x-init="$watch('series', newValue => fillChartForSeries(newValue))"></button>
             </template>
 
-            <div id="chartContainer" style="width: 1000px; height: 450px; position: relative;"></div>
+        </div>
 
+        <div class="container">
+            <div id="chartContainer" style="height: 100%;width: 100%;box-sizing: border-box;">
+            </div>
         </div>
 
         <script>
@@ -79,47 +89,6 @@ templ BacktestingPage() {
 				},
 			};
 		}
-
-        function series() {
-            return {
-                seriesUrls: [],
-                status: "",
-                async loadSeriesUrls() {
-                    try {
-                        const response = await fetch('/api/seriesdumpslist', {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(this.form),
-                        });
-
-                        this.seriesUrls = await response.json();
-                        this.status = "Серии загружены"
-
-                    } catch (error) {
-                        this.status = 'Ошибка при отправке данных:'+error
-                        console.error('Ошибка при отправке данных:', error);
-                    }
-                },
-                async loadSeries(url) {
-                    try {
-                        const response = await fetch('/data'+url, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(this.form),
-                        });
-
-                        data = await response.json();
-                        //console.log(data)
-                        fillChartForSeries(data)
-                        this.status = "Загружены данные серии "+url
-
-                    } catch (error) {
-                        this.status = 'Ошибка при отправке данных:'+error
-                        console.error('Ошибка при отправке данных:', error);
-                    }
-                }
-            };
-        }
 
         function getRandomColor() {
         // Генерируем случайное число от 0 до 0xFFFFFF, переводим в строку в 16-ричном формате,
