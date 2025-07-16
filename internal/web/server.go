@@ -4,6 +4,7 @@ package web
 
 import (
 	"context"
+	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
 	"crypto-trading-bot/internal/service/exchange"
@@ -35,13 +36,21 @@ type Server struct {
 	traderHandler     *handlers.TraderHandler
 }
 
-func NewServer(port string, repo *repositories.Repository, logger *logger.Logger, exchangeService exchange.ExchangeService, strategyService strategy.StrategyService, marketDataService marketdata.MarketDataService) *Server {
+func NewServer(
+	port string,
+	conf *config.Config,
+	repo *repositories.Repository,
+	logger *logger.Logger,
+	exchangeService exchange.ExchangeService,
+	strategyService strategy.StrategyService,
+	marketDataService marketdata.MarketDataService,
+) *Server {
 	router := mux.NewRouter()
 
 	resourcesHandler := handlers.NewResourcesHandler(logger)
 	strategyHandler := handlers.NewStrategyHandler(strategyService, logger)
 	marketDataHandler := handlers.NewMarketDataHandler(marketDataService, exchangeService, logger)
-	traderHandler := handlers.NewTraderHandler(logger)
+	traderHandler := handlers.NewTraderHandler(conf, logger)
 
 	s := &Server{
 		port:   port,

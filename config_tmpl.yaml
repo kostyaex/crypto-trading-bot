@@ -7,6 +7,9 @@ postgres:
   dbname: your_dbname
   sslmode: disable
 
+data:
+  dir: "data" # Путь к папке с данными
+
 web:
   port: 8080
 

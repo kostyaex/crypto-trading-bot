@@ -20,6 +20,10 @@ type Config struct {
 		SSLMode  string `mapstructure:"sslmode"`
 	} `mapstructure:"postgres"`
 
+	Data struct {
+		Dir string `mapstructure:"dir"` // Путь к папке с данными
+	} `mapstructure:"data"`
+
 	Web struct {
 		Port int `mapstructure:"port"`
 	} `mapstructure:"web"`
@@ -43,7 +47,6 @@ type Config struct {
 	} `mapstructure:"security"`
 
 	Backtesting struct {
-		WavesDumpDir      string  `mapstructure:"wavesDumpDir"`
 		DefaultCapital    float64 `mapstructure:"defaultCapital"`
 		DefaultCommission float64 `mapstructure:"defaultCommission"`
 		DefaultSpread     float64 `mapstructure:"defaultSpread"`

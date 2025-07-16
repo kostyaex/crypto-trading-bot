@@ -1,24 +1,26 @@
 package handlers
 
 import (
+	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/web/ui"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-	"sort"
 	"time"
 )
 
 type TraderHandler struct {
 	// marketDataService marketdata.MarketDataService
 	// exchangeService   exchange.ExchangeService
+	conf   *config.Config
 	logger *logger.Logger
 }
 
-func NewTraderHandler(logger *logger.Logger) *TraderHandler {
+func NewTraderHandler(conf *config.Config, logger *logger.Logger) *TraderHandler {
 	return &TraderHandler{
+		conf:   conf,
 		logger: logger,
 	}
 }
@@ -74,27 +76,14 @@ func (h *TraderHandler) PostRunBacktesting(w http.ResponseWriter, r *http.Reques
 
 //curl -X POST -H "Content-Type: application/json" -d '{"start": "2023-01-01T12:00:00", "stop": "2023-01-01T13:00:00"}' http://localhost:5000/api/runbacktesting
 
+// Получить список URL сохраненных серий в каталоге data. Возвращает в виде JSON.
 func (h *TraderHandler) GetSeriesDumpsList(w http.ResponseWriter, r *http.Request) {
 
-	names := make([]string, 0)
-
-	files, err := os.ReadDir("/home/kostya/projects/crypto-trading-bot/data/series")
+	names, err := series.SeriesDumpList(h.conf.Data.Dir+"/series", "/series/")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
-	}
-
-	// Сортируем по дате в обратном порядке
-	sort.Slice(files, func(i int, j int) bool {
-		fileI, _ := files[i].Info()
-		fileJ, _ := files[j].Info()
-		return fileI.ModTime().After(fileJ.ModTime())
-	})
-
-	for _, file := range files {
-		fileInfo, _ := file.Info()
-		names = append(names, fileInfo.Name())
 	}
 
 	w.Header().Set("Content-Type", "application/json")
