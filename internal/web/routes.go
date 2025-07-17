@@ -46,6 +46,7 @@ func (s *Server) routes() {
 	s.router.HandleFunc("/backtesting", s.traderHandler.GetBacktestingPage).Methods("GET")
 	s.router.HandleFunc("/api/runbacktesting", s.traderHandler.PostRunBacktesting).Methods("POST")
 	s.router.HandleFunc("/api/seriesdumpslist", s.traderHandler.GetSeriesDumpsList).Methods("GET")
+	s.router.HandleFunc("/api/backtestsdumpslist", s.traderHandler.GetBacktestsDumpsList).Methods("GET")
 
 	//s.router.HandleFunc("/marketdata", s.marketDataHandler.GetMarketData).Methods("GET")
 }

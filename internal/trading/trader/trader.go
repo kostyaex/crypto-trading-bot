@@ -1,6 +1,7 @@
 package trader
 
 import (
+	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/utils"
 	"crypto-trading-bot/internal/models"
@@ -18,12 +19,14 @@ type TraderService interface {
 }
 
 type traderService struct {
+	conf              *config.Config
 	logger            *logger.Logger
 	marketDataService marketdata.MarketDataService
 }
 
-func NewTraderService(logger *logger.Logger, marketDataService marketdata.MarketDataService) TraderService {
+func NewTraderService(conf *config.Config, logger *logger.Logger, marketDataService marketdata.MarketDataService) TraderService {
 	return &traderService{
+		conf:              conf,
 		logger:            logger,
 		marketDataService: marketDataService,
 	}
@@ -69,6 +72,7 @@ func runStrategyForSource(
 	strategy models.Strategy,
 	source sources.MarketDataSource,
 	dispatcher *dispatcher.Dispatcher,
+	backtestContext *BacktestContext,
 ) error {
 	defer source.Close()
 
@@ -77,14 +81,29 @@ func runStrategyForSource(
 		return err
 	}
 
-	marketDataCh := source.GetMarketDataCh()
+	//marketDataCh := source.GetMarketDataCh()
+
+	// дублируем канал для обработки и сбора статистики
+	broadcaster := marketdata.NewBroadcaster(source.GetMarketDataCh())
+	broadcaster.Start()
+
+	marketDataCh1 := broadcaster.Subscribe()
+	marketDataCh2 := broadcaster.Subscribe()
 
 	// Разбиваем полученные торговые данные на интевалы по настройкам из стратегии
 	intervalsCh := make(chan []*models.MarketData)
 	go func() {
-		utils.SplitChannelWithOverlap(marketDataCh, strategySettings.Cluster.Block, 0, intervalsCh)
+		utils.SplitChannelWithOverlap(marketDataCh1, strategySettings.Cluster.Block, 0, intervalsCh)
 		//close(intervalsCh)
 	}()
+
+	go func() {
+		for md := range marketDataCh2 {
+			backtestContext.collectMarketData(md)
+		}
+	}()
+
+	//broadcaster.Wait()
 
 	builder, err := series.NewSeriesBuilder(strategy.SeriesBuilderConfig)
 	if err != nil {
@@ -120,46 +139,12 @@ func runStrategyForSource(
 		}
 	}
 
-	filename := fmt.Sprintf("/home/kostya/projects/crypto-trading-bot/data/series/series_%s.json", time.Now().Format("2006-01-02_15-04-05"))
-	series.SaveSeries(activeSeries, filename)
+	//filename := fmt.Sprintf("/home/kostya/projects/crypto-trading-bot/data/series/series_%s.json", time.Now().Format("2006-01-02_15-04-05"))
+	//series.SaveSeries(activeSeries, filename)
 
 	// Сбор метрик
 	metrics := series.CollectMetrics(activeSeries)
 	metrics.Print()
 
 	return nil
-}
-
-func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time) {
-
-	strategySettings, err := strategy.Settings()
-	if err != nil {
-		s.logger.Errorf("Ошибка создания новой стратегии %v", err)
-		return
-	}
-
-	// Получить данные за период
-	marketData, err := s.marketDataService.GetMarketDataPeriod(strategySettings.Symbol, strategySettings.Interval, startTime, endTime)
-	//	marketData, err := s.GetMarketData("BTCUSDT", 1000)
-	if err != nil {
-		s.logger.Errorf("Ошибка получения торговых данных: %s\n", err)
-		return
-	}
-
-	source := NewMockMarketDataSource(marketData)
-
-	disp := dispatcher.NewDispatcher(
-		&dispatcher.VolumeTrendRule{MinVolumeChangePercent: 10},
-	)
-
-	disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
-	disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
-	//disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
-
-	// Вызов тестируемой функции
-	err = runStrategyForSource(*strategy, source, disp)
-	if err != nil {
-		s.logger.Errorf("Ошибка выполнения RunStrategyForSource %v", err)
-		return
-	}
 }

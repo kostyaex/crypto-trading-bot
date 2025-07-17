@@ -50,7 +50,7 @@ func NewTestSetup() *TestSetup {
 
 	//strategyService := NewStrategyService(repo)
 
-	traderService := NewTraderService(logger, marketDataService)
+	traderService := NewTraderService(cfg, logger, marketDataService)
 
 	return &TestSetup{
 		//exchanges:         exchanges,
@@ -190,7 +190,7 @@ func Test_runStrategyForSource(t *testing.T) {
 	//disp.Register(dispatcher.SignalHold, &dispatcher.LoggerHandler{})
 
 	// Вызов тестируемой функции
-	err = runStrategyForSource(*strategy, source, disp)
+	err = runStrategyForSource(*strategy, source, disp, nil)
 	if err != nil {
 		t.Errorf("Ошибка выполнения RunStrategyForSource %v", err)
 		return
@@ -207,7 +207,7 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 	// Пример конфигурации
 	config := map[string]interface{}{
 		"type":         "simple",
-		"value_factor": 200.0,
+		"value_factor": 1000.0,
 		"time_factor":  10.0,
 	}
 
@@ -215,7 +215,7 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 10, Block: 300, Interval: "5m"}},
+			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 300, Interval: "5m"}},
 		config)
 
 	if err != nil {

@@ -3,7 +3,7 @@ package handlers
 import (
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/service/series"
+	"crypto-trading-bot/internal/core/utils"
 	"crypto-trading-bot/internal/web/ui"
 	"encoding/json"
 	"fmt"
@@ -79,7 +79,25 @@ func (h *TraderHandler) PostRunBacktesting(w http.ResponseWriter, r *http.Reques
 // Получить список URL сохраненных серий в каталоге data. Возвращает в виде JSON.
 func (h *TraderHandler) GetSeriesDumpsList(w http.ResponseWriter, r *http.Request) {
 
-	names, err := series.SeriesDumpList(h.conf.Data.Dir+"/series", "/series/")
+	names, err := utils.FileList(h.conf.Data.Dir+"/series", "/series/")
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(names); err != nil {
+		h.logger.Errorf("Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+}
+
+// Получить список URL сохраненных серий в каталоге data. Возвращает в виде JSON.
+func (h *TraderHandler) GetBacktestsDumpsList(w http.ResponseWriter, r *http.Request) {
+
+	names, err := utils.FileList(h.conf.Data.Dir+"/backtests", "/backtests/")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

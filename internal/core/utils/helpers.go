@@ -2,7 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"sort"
 	"time"
 )
 
@@ -40,6 +42,31 @@ func TrimPathToDir(fullPath string, targetDir string) (string, error) {
 	}
 
 	return "", fmt.Errorf("не удалось обрезать путь до каталога %s", targetDir)
+}
+
+func FileList(filePath string, namePrefix string) ([]string, error) {
+	names := make([]string, 0)
+
+	files, err := os.ReadDir(filePath)
+
+	if err != nil {
+		return names, err
+	}
+
+	// Сортируем по дате в обратном порядке
+	sort.Slice(files, func(i int, j int) bool {
+		fileI, _ := files[i].Info()
+		fileJ, _ := files[j].Info()
+		return fileI.ModTime().After(fileJ.ModTime())
+	})
+
+	for _, file := range files {
+		name := fmt.Sprintf("%s%s", namePrefix, file.Name())
+		fmt.Println(name)
+		names = append(names, name)
+	}
+
+	return names, nil
 }
 
 // -------------------------------------------------------------
