@@ -1,3 +1,4 @@
+
 package ui
 
 templ BacktestingPage() {
@@ -19,7 +20,8 @@ templ BacktestingPage() {
                 <label for="datetime2">Конец периода:</label>
                 <input x-model="form.stop" type="datetime-local" id="datetime2" name="datetime2" required>
                 <br><br>
-                <button type="submit">Подтвердить</button>
+                <button class="button" x-on:click="showMarketData">Показать торговые данные</button>
+                <button type="submit">Запустить бектестинг</button>
             </form>
             <h2>Результаты:</h2>
             <p x-text="status"></p>
@@ -67,6 +69,10 @@ templ BacktestingPage() {
                 },
                 status: "",
                 results: [],
+                async showMarketData() {
+                    // дата вида 2025-07-23T17:59
+                    fillChart_MarketDataForPeriod(this.form.start, this.form.stop)
+                },
 				async submit() {
 				try {
 					const response = await fetch('/api/runbacktesting', {

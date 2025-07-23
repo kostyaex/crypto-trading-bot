@@ -30,8 +30,14 @@ func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (m
 
 	//https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints#klinecandlestick-data
 
+	irkutskLocation, err := time.LoadLocation("Asia/Irkutsk")
+	if err != nil {
+		panic(err)
+	}
+
 	// Преобразование startTime в миллисекунды с начала эпохи Unix
-	startTimestamp := startTime.UnixNano() / int64(time.Millisecond)
+	// По умолчанию часовой пояс UTC
+	startTimestamp := startTime.UTC().UnixNano() / int64(time.Millisecond)
 
 	url := fmt.Sprintf("%s/api/v3/klines?symbol=%s&interval=%s&startTime=%d", b.baseURL, symbol, interval, startTimestamp)
 
@@ -54,20 +60,26 @@ func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (m
 		//openTime := int64(kline[0].(float64)) //strconv.ParseInt(kline[0].(string), 10, 64)
 		closeTime := int64(kline[6].(float64))
 		openPrice, _ := strconv.ParseFloat(kline[1].(string), 64)
+		hightPrice, _ := strconv.ParseFloat(kline[2].(string), 64)
+		lowPrice, _ := strconv.ParseFloat(kline[3].(string), 64)
 		closePrice, _ := strconv.ParseFloat(kline[4].(string), 64)
 		volume, _ := strconv.ParseFloat(kline[5].(string), 64)
 		buyVolume, _ := strconv.ParseFloat(kline[9].(string), 64)
-		lastTime = time.UnixMilli(closeTime)
+
+		// Преобразуем из UTC в локальное время
+		lastTime = time.UnixMilli(closeTime).In(irkutskLocation)
 
 		marketData = append(marketData, &models.MarketData{
 			Symbol:     symbol,
 			OpenPrice:  openPrice,
+			HightPrice: hightPrice,
+			LowPrice:   lowPrice,
 			ClosePrice: closePrice,
 			Volume:     volume,
 			BuyVolume:  buyVolume,
 			SellVolume: volume - buyVolume,
 			TimeFrame:  interval,
-			Timestamp:  time.UnixMilli(closeTime),
+			Timestamp:  lastTime,
 		})
 	}
 

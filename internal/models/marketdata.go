@@ -26,6 +26,8 @@ type MarketData struct {
 	Symbol       string    `db:"symbol"`
 	TimeFrame    string    `db:"time_frame"`
 	OpenPrice    float64   `db:"open_price"`
+	HightPrice   float64   `db:"hight_price"`
+	LowPrice     float64   `db:"low_price"`
 	ClosePrice   float64   `db:"close_price"`
 	ClusterPrice float64   `db:"cluster_price"`
 	Volume       float64   `db:"volume"`

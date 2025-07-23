@@ -9,6 +9,7 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: пароль
       POSTGRES_DB: app_db
+      TZ: Asia/Irkutsk
     ports:
       - "54320:5432"
     volumes:

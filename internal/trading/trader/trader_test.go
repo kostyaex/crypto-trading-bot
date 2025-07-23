@@ -223,8 +223,8 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 		return
 	}
 
-	startTime, _ := time.Parse(time.DateTime, "2025-07-01 00:00:00")
-	stopTime, _ := time.Parse(time.DateTime, "2025-07-01 23:59:59") //
+	startTime, _ := time.Parse(time.DateTime, "2025-07-23 00:00:00")
+	stopTime, _ := time.Parse(time.DateTime, "2025-07-23 23:59:59") //
 
 	setup.traderService.RunBacktesting(strategy, startTime, stopTime)
 }

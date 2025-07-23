@@ -36,6 +36,25 @@ func NewResourcesHandler(logger *logger.Logger) *ResourcesHandler {
 		},
 	}
 
+	resources["market_data"] = ui.Resource{
+		Name:        "market_data",
+		Title:       "Данные с бирж",
+		FieldsOrder: []string{"id", "exchange", "symbol", "time_frame", "active", "actual_time", "status"},
+		Fields: map[string]*ui.ResourceField{
+			"timestamp":   &ui.ResourceField{Name: "timestamp", Title: "timestamp"},
+			"exchange":    &ui.ResourceField{Name: "exchange", Title: "exchange"},
+			"symbol":      &ui.ResourceField{Name: "symbol", Title: "symbol"},
+			"time_frame":  &ui.ResourceField{Name: "time_frame", Title: "time_frame"},
+			"open_price":  &ui.ResourceField{Name: "open_price", Title: "open_price"},
+			"hight_price": &ui.ResourceField{Name: "hight_price", Title: "hight_price"},
+			"low_price":   &ui.ResourceField{Name: "low_price", Title: "low_price"},
+			"close_price": &ui.ResourceField{Name: "close_price", Title: "close_price"},
+			"volume":      &ui.ResourceField{Name: "volume", Title: "volume"},
+			"buy_volume":  &ui.ResourceField{Name: "buy_volume", Title: "buy_volume"},
+			"sell_volume": &ui.ResourceField{Name: "sell_volume", Title: "sell_volume"},
+		},
+	}
+
 	resources["strategies"] = ui.Resource{
 		Name:        "strategies",
 		Title:       "Стратегии",

@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS market_data (
     symbol TEXT NOT NULL,
     time_frame TEXT NOT NULL,
     open_price NUMERIC(20, 8) NOT NULL,
+    hight_price NUMERIC(20, 8) NOT NULL,
+    low_price NUMERIC(20, 8) NOT NULL,
     close_price NUMERIC(20, 8) NOT NULL,
     volume NUMERIC(20,3) NOT NULL,
     buy_volume NUMERIC(20,3) NOT NULL,
@@ -19,7 +21,7 @@ CREATE TABLE IF NOT EXISTS market_data_statuss (
     symbol TEXT NOT NULL,
     time_frame TEXT NOT NULL,
     active BOOLEAN NOT NULL DEFAULT FALSE,
-    actual_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actual_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL,
     UNIQUE(exchange,symbol, time_frame)
 );
