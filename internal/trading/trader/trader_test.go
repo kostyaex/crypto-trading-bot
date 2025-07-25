@@ -215,7 +215,7 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 300, Interval: "5m"}},
+			Cluster:  models.ClusterSettings{NumClusters: 10, Block: 300, Interval: "5m"}},
 		config)
 
 	if err != nil {

@@ -88,7 +88,7 @@ func runStrategyForSource(
 	broadcaster.Start()
 
 	marketDataCh1 := broadcaster.Subscribe()
-	marketDataCh2 := broadcaster.Subscribe()
+	//marketDataCh2 := broadcaster.Subscribe()
 
 	// Разбиваем полученные торговые данные на интевалы по настройкам из стратегии
 	intervalsCh := make(chan []*models.MarketData)
@@ -97,11 +97,11 @@ func runStrategyForSource(
 		//close(intervalsCh)
 	}()
 
-	go func() {
-		for md := range marketDataCh2 {
-			backtestContext.collectMarketData(md)
-		}
-	}()
+	// go func() {
+	// 	for md := range marketDataCh2 {
+	// 		backtestContext.collectMarketData(md)
+	// 	}
+	// }()
 
 	//broadcaster.Wait()
 
@@ -113,7 +113,14 @@ func runStrategyForSource(
 	var activeSeries []series.Series
 
 	for interval := range intervalsCh {
+		// здесь сворачиваем данные в кластеры. Т.е. к примеру данные за секундный интервал в 5 минутный, получим столько значений, сколько указано количество кластеров.
 		clusteredMd := clusters.ClusterMarketData(interval, strategySettings.Cluster.Interval, strategySettings.Cluster.NumClusters)
+
+		// Собираем данные для статистики
+		for _, md := range clusteredMd {
+			backtestContext.collectClusteredMarketData(md)
+		}
+
 		var points []series.Point
 		for _, md := range clusteredMd {
 			point := series.Point{

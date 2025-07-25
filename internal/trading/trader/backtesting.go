@@ -12,8 +12,9 @@ import (
 type BacktestContext struct {
 	StrategyParams map[string]interface{} `json:"strategy_params"`
 	//IntermediateResults []map[string]interface{} `json:"intermediate_results"`
-	Timestamp  string               `json:"timestamp"`
-	MarketData []*models.MarketData `json:"marketdata"`
+	Timestamp           string               `json:"timestamp"`
+	MarketData          []*models.MarketData `json:"marketdata"`
+	ClusteredMarketData []*models.MarketData `json:"clustered_marketdata"`
 }
 
 func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time) {
@@ -65,6 +66,10 @@ func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, end
 
 func (ctx *BacktestContext) collectMarketData(md *models.MarketData) {
 	ctx.MarketData = append(ctx.MarketData, md)
+}
+
+func (ctx *BacktestContext) collectClusteredMarketData(md *models.MarketData) {
+	ctx.ClusteredMarketData = append(ctx.ClusteredMarketData, md)
 }
 
 func (ctx *BacktestContext) saveBacktestContext(filePath string) error {

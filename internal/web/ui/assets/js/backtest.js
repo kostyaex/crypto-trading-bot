@@ -6,7 +6,8 @@ function backtests() {
         async backtestsUrls() {
             try {
                 const response = await fetch('/api/backtestsdumpslist', {
-                method: 'GET',
+                    cache: 'no-store',
+                    method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.form),
                 });
@@ -22,7 +23,8 @@ function backtests() {
         async loadBacktest(url) {
             try {
                 const response = await fetch('/data'+url, {
-                method: 'GET',
+                    cache: 'no-store',
+                    method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.form),
                 });

@@ -105,6 +105,11 @@ func (h *TraderHandler) GetBacktestsDumpsList(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	// Предупреждение кэширования:
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+
 	if err := json.NewEncoder(w).Encode(names); err != nil {
 		h.logger.Errorf("Failed to encode response: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

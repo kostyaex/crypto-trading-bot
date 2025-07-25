@@ -38,7 +38,7 @@ templ BacktestingPage() {
                 <button class="button"
                     x-text="url"
                     x-on:click="loadBacktest(url)"
-                    x-init="$watch('backtests', newValue => fillChartForSeries(newValue))"></button>
+                    x-init="$watch('backtests', newValue => chart.updateForBacktesting(newValue))"></button>
             </template>
 
         </div>
@@ -49,6 +49,9 @@ templ BacktestingPage() {
         </div>
 
         <script>
+
+        const chart = NewChart()
+        chart.InitChart("chartContainer")
 
         function convertDateToInputFormat(date) {
             let year = date.getFullYear();
@@ -76,6 +79,7 @@ templ BacktestingPage() {
 				async submit() {
 				try {
 					const response = await fetch('/api/runbacktesting', {
+                        cache: 'no-store',
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(this.form),
