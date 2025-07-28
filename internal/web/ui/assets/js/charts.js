@@ -90,28 +90,50 @@ function NewChart() {
         updateForBacktesting(backtesting) {
 
             // Удаляем все существующие серии
-            this.seriesList.forEach(series => this.chart.removeSeries(series));
-    
-            const candlestickSeries = this.chart.addSeries(LightweightCharts.CandlestickSeries, {
-                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
-                wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            while (this.seriesList.length > 0) {
+                this.chart.removeSeries(this.seriesList.pop())
+            }
+
+            // Серии
+            backtesting.series_list.forEach(series => {
+                if (series.points.length < 20) {
+                    return
+                }
+                lineSeries = this.chart.addSeries(LightweightCharts.LineSeries, {
+                    color: getRandomColor()
+                });
+                this.seriesList.push(lineSeries);
+
+                const convertedArray = series.points.map(item => ({
+                    time: Math.floor(new Date(item.time) / 1000),
+                    value: item.value
+                }));
+                console.log(convertedArray)
+                lineSeries.setData(convertedArray)
             });
-            this.seriesList.push(candlestickSeries);
             
-            originalArray = backtesting.clustered_marketdata
-            const convertedArray = originalArray.map(item => (        {
-                time: Math.floor(new Date(item.Timestamp) / 1000),
-                open: item.ClusterPrice-50,
-                high: item.ClusterPrice+50,
-                low: item.ClusterPrice-50,
-                close: item.ClusterPrice+50
-            }));
+    
+            // Торговые свечи
+            // const candlestickSeries = this.chart.addSeries(LightweightCharts.CandlestickSeries, {
+            //     upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+            //     wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            // });
+            // this.seriesList.push(candlestickSeries);
+            
+			// const delta = 1
+            // originalArray = backtesting.clustered_marketdata
+            // const convertedArray = originalArray.map(item => (        {
+            //     time: Math.floor(new Date(item.Timestamp) / 1000),
+            //     open: item.ClusterPrice - delta,
+            //     high: item.ClusterPrice + delta,
+            //     low: item.ClusterPrice - delta,
+            //     close: item.ClusterPrice + delta
+            // }));
+
+            //candlestickSeries.setData(convertedArray);
         
             //console.log(convertedArray)
-            
-            candlestickSeries.setData(convertedArray);
-            
-            
+              
             this.chart.timeScale().fitContent();
         }
     }

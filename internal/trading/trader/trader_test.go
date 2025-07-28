@@ -207,15 +207,16 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 	// Пример конфигурации
 	config := map[string]interface{}{
 		"type":         "simple",
-		"value_factor": 1000.0,
+		"value_factor": 100.0,
 		"time_factor":  10.0,
 	}
 
+	// Здесь параметр Block задает свертку интервалов по 1s в 5м интервал
 	strategy, err := models.NewStrategy("test-strategy", "",
 		models.StrategySettings{
 			Symbol:   "BTCUSDT",
 			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 10, Block: 300, Interval: "5m"}},
+			Cluster:  models.ClusterSettings{NumClusters: 5, Block: 300, Interval: "5m"}},
 		config)
 
 	if err != nil {

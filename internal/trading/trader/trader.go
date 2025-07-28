@@ -149,6 +149,8 @@ func runStrategyForSource(
 	//filename := fmt.Sprintf("/home/kostya/projects/crypto-trading-bot/data/series/series_%s.json", time.Now().Format("2006-01-02_15-04-05"))
 	//series.SaveSeries(activeSeries, filename)
 
+	backtestContext.SeriesList = activeSeries
+
 	// Сбор метрик
 	metrics := series.CollectMetrics(activeSeries)
 	metrics.Print()
