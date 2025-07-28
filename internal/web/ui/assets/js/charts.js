@@ -71,46 +71,35 @@ async function fillChart_MarketDataForPeriod(start, end) {
 function NewChart() {
     return {
         chart : null,
-        seriesList: [],
+        containerId: "",
         InitChart (containerId) {
+            this.containerId = containerId;
             // Получаем контейнер по ID
-            const chartContainer = document.getElementById(containerId);
+            //const chartContainer = document.getElementById(containerId);
                 
-            const chartOptions = {
-                layout: { textColor: 'black', background: { type: 'solid', color: 'white' } },
-                //width: 600,
-                height: 400,
-            };
-            this.chart = LightweightCharts.createChart(chartContainer, chartOptions);
-            this.chart.applyOptions({
-                timeScale: { timeVisible: true }
-            });
+            //this.chart = Plotly.newPlot(containerId);
         },
 
         updateForBacktesting(backtesting) {
 
-            // Удаляем все существующие серии
-            while (this.seriesList.length > 0) {
-                this.chart.removeSeries(this.seriesList.pop())
-            }
+            const traces = []; // подготовленные данные для графика
 
             // Серии
             backtesting.series_list.forEach(series => {
-                if (series.points.length < 20) {
+                if (series.points.length == 0) {
                     return
                 }
-                lineSeries = this.chart.addSeries(LightweightCharts.LineSeries, {
-                    color: getRandomColor()
-                });
-                this.seriesList.push(lineSeries);
 
-                const convertedArray = series.points.map(item => ({
-                    time: Math.floor(new Date(item.time) / 1000),
-                    value: item.value
-                }));
-                console.log(convertedArray)
-                lineSeries.setData(convertedArray)
+                const timeAxis = series.points.map(item => (new Date(item.time)));
+                const priceAxis = series.points.map(item => (item.value));
+
+                traces.push({ x: timeAxis, y: priceAxis, type: 'scatter', color: getRandomColor() })
+            
             });
+
+            
+            var layout = { title: 'Серии' };
+            Plotly.react(this.containerId, traces, layout);
             
     
             // Торговые свечи
@@ -134,7 +123,7 @@ function NewChart() {
         
             //console.log(convertedArray)
               
-            this.chart.timeScale().fitContent();
+            //this.chart.timeScale().fitContent();
         }
     }
 }
