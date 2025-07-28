@@ -20,9 +20,10 @@ type Strategy struct {
 // для добавления полей в интерактивное поле см strategy_settings_field.templ
 
 type StrategySettings struct {
-	Symbol   string          `mapstructure:"symbol"`   // используемая пара
-	Interval string          `mapstructure:"interval"` // используемый интервал для выборки данных биржи
-	Cluster  ClusterSettings `mapstructure:"cluster"`
+	Symbol              string                 `mapstructure:"symbol"`   // используемая пара
+	Interval            string                 `mapstructure:"interval"` // используемый интервал для выборки данных биржи
+	Cluster             ClusterSettings        `mapstructure:"cluster"`
+	SeriesBuilderConfig map[string]interface{} `mapstructure:"series_builder_config"`
 }
 
 type ClusterSettings struct {
@@ -36,7 +37,7 @@ type ClusterSettings struct {
 // }
 
 // NewStrategy создает новую торговую стратегию
-func NewStrategy(name, description string, settings StrategySettings, seriesBuilderConfig map[string]interface{}) (*Strategy, error) {
+func NewStrategy(name, description string, settings StrategySettings) (*Strategy, error) {
 
 	configJSON, err := utils.StructToJSON(settings)
 	if err != nil {
@@ -48,7 +49,7 @@ func NewStrategy(name, description string, settings StrategySettings, seriesBuil
 		Description:         description,
 		Config:              []byte(configJSON),
 		Active:              true,
-		SeriesBuilderConfig: seriesBuilderConfig,
+		SeriesBuilderConfig: settings.SeriesBuilderConfig,
 	}, nil
 }
 

@@ -9,12 +9,22 @@ type SimpleSeriesBuilder struct {
 
 // Формирование серий по сопоставлению последней точки серии с добавляемыми
 func (b *SimpleSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Point) []Series {
+
+	// Точки с одинаковым временем, не должны попадать в одну серию
+
 	for _, pt := range newPoints {
 		bestMatch := -1
 		minScore := math.MaxFloat64
 
 		for i := range activeSeries {
+
+			// Получение последней точки серии
 			lastPt := activeSeries[i].Points[len(activeSeries[i].Points)-1]
+
+			if pt.Time == lastPt.Time {
+				continue
+			}
+
 			dt := pt.Time.Sub(lastPt.Time).Seconds()
 			dv := math.Abs(pt.Value - lastPt.Value)
 			combinedWeight := pt.Weight + lastPt.Weight + 1e-9

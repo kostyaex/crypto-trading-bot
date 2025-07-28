@@ -81,7 +81,8 @@ func Test_GroupingAndBroadcasting(t *testing.T) {
 
 	strategies := make([]models.Strategy, 0)
 	for n, settings := range strategiesSettings {
-		strategy, err := models.NewStrategy("strat"+strconv.Itoa(n), "", settings, config)
+		settings.SeriesBuilderConfig = config
+		strategy, err := models.NewStrategy("strat"+strconv.Itoa(n), "", settings)
 		if err != nil {
 			t.Errorf("Ошибка создания новой стратегии %v", err)
 		}
@@ -171,10 +172,11 @@ func Test_runStrategyForSource(t *testing.T) {
 
 	strategy, err := models.NewStrategy("test-strategy", "",
 		models.StrategySettings{
-			Symbol:   "BTCUSDT",
-			Interval: "1m",
-			Cluster:  models.ClusterSettings{NumClusters: 1, Block: 5, Interval: "5m"}},
-		config)
+			Symbol:              "BTCUSDT",
+			Interval:            "1m",
+			Cluster:             models.ClusterSettings{NumClusters: 1, Block: 5, Interval: "5m"},
+			SeriesBuilderConfig: config,
+		})
 
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)
@@ -207,17 +209,18 @@ func TestTraderService_RunBacktesting(t *testing.T) {
 	// Пример конфигурации
 	config := map[string]interface{}{
 		"type":         "simple",
-		"value_factor": 100.0,
-		"time_factor":  10.0,
+		"value_factor": 1000.0,
+		"time_factor":  1000.0,
 	}
 
 	// Здесь параметр Block задает свертку интервалов по 1s в 5м интервал
 	strategy, err := models.NewStrategy("test-strategy", "",
 		models.StrategySettings{
-			Symbol:   "BTCUSDT",
-			Interval: "1s",
-			Cluster:  models.ClusterSettings{NumClusters: 5, Block: 300, Interval: "5m"}},
-		config)
+			Symbol:              "BTCUSDT",
+			Interval:            "1s",
+			Cluster:             models.ClusterSettings{NumClusters: 5, Block: 300, Interval: "5m"},
+			SeriesBuilderConfig: config,
+		})
 
 	if err != nil {
 		t.Errorf("Ошибка создания новой стратегии %v", err)

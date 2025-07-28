@@ -11,7 +11,8 @@ import (
 )
 
 type BacktestContext struct {
-	StrategyParams map[string]interface{} `json:"strategy_params"`
+	//StrategyParams map[string]interface{} `json:"strategy_params"`
+	StrategySettings *models.StrategySettings
 	//IntermediateResults []map[string]interface{} `json:"intermediate_results"`
 	Timestamp           string               `json:"timestamp"`
 	MarketData          []*models.MarketData `json:"marketdata"`
@@ -21,15 +22,15 @@ type BacktestContext struct {
 
 func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time) {
 
-	ctx := &BacktestContext{
-		StrategyParams: make(map[string]interface{}),
-		Timestamp:      time.Now().Format("2006-01-02T15:04:05Z"),
-	}
-
 	strategySettings, err := strategy.Settings()
 	if err != nil {
 		s.logger.Errorf("Ошибка создания новой стратегии %v", err)
 		return
+	}
+
+	ctx := &BacktestContext{
+		StrategySettings: strategySettings,
+		Timestamp:        time.Now().Format("2006-01-02T15:04:05Z"),
 	}
 
 	// Получить данные за период

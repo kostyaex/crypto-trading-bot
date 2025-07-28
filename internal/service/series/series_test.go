@@ -26,9 +26,11 @@ func TestNewSeriesBuilder(t *testing.T) {
 	now := time.Now()
 
 	// Итерация 1
+	// Два значения с одинаковым временем, не должны попасть в одну серию
 	points1 := []Point{
 		{Value: 100.0, Weight: 2.5, Time: now},
-		{Value: 101.0, Weight: 3.0, Time: now.Add(1 * time.Second)},
+		{Value: 101.0, Weight: 3.0, Time: now},
+		{Value: 110.0, Weight: 2.0, Time: now},
 	}
 	series = builder.AddPoints(series, points1)
 
@@ -42,7 +44,15 @@ func TestNewSeriesBuilder(t *testing.T) {
 	// Вывод
 	for i, s := range series {
 		fmt.Printf("Серия %d:\n", i+1)
+
+		// Проверяем, чтобы в серии не было точек с одинаковым временем
+		_time := time.Time{}
 		for _, p := range s.Points {
+			if p.Time.Equal(_time) {
+				t.Errorf("В серии %d есть точки с одинаковым временем: %s", i+1, p.Time.Format("15:04:05"))
+			} else {
+				_time = p.Time
+			}
 			fmt.Printf("  Значение: %.2f | Вес: %.2f | Время: %s\n", p.Value, p.Weight, p.Time.Format("15:04:05"))
 		}
 	}
