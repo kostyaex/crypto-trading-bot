@@ -29,7 +29,7 @@ func (b *SimpleSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Point
 			dv := math.Abs(pt.Value - lastPt.Value)
 			combinedWeight := pt.Weight + lastPt.Weight + 1e-9
 
-			score := dv/b.valueFactor/combinedWeight + dt/b.timeFactor/combinedWeight
+			score := dv*b.valueFactor/combinedWeight + dt*b.timeFactor/combinedWeight
 
 			if dt >= 0 && score < minScore {
 				minScore = score

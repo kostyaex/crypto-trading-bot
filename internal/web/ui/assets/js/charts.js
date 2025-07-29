@@ -86,7 +86,7 @@ function NewChart() {
 
             // Серии
             backtesting.series_list.forEach(series => {
-                if (series.points.length < 5) {
+                if (series.points.length == 0) {
                     return
                 }
 
