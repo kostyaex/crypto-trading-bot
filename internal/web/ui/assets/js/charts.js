@@ -83,6 +83,17 @@ function NewChart() {
         updateForBacktesting(backtesting) {
 
             const traces = []; // подготовленные данные для графика
+			const desired_maximum_marker_size = 40; // необходимый максимальный размер маркера
+
+			// определяем максимальный вес для задания размера маркеров
+			const weights = [];
+            backtesting.series_list.forEach(series => {
+				series.points.forEach(point  => {
+					weights.push(point.weight)
+				});
+			});
+			const maxWeight = Math.max(...weights)
+
 
             // Серии
             backtesting.series_list.forEach(series => {
@@ -92,8 +103,19 @@ function NewChart() {
 
                 const timeAxis = series.points.map(item => (new Date(item.time)));
                 const priceAxis = series.points.map(item => (item.value));
+                const size = series.points.map(item => (item.weight));
 
-                traces.push({ x: timeAxis, y: priceAxis, type: 'scatter', color: getRandomColor() })
+                traces.push({
+					x: timeAxis,
+					y: priceAxis,
+					marker: {
+					    size: size,
+					    //set 'sizeref' to an 'ideal' size given by the formula sizeref = 2. * max(array_of_size_values) / (desired_maximum_marker_size ** 2)
+						sizeref: 2.0 * maxWeight / (desired_maximum_marker_size**2),
+						sizemode: 'area'
+					  },
+					type: 'scatter',
+					color: getRandomColor() })
             
             });
 
