@@ -17,7 +17,7 @@ type SeriesMetrics struct {
 	StartTime, EndTime time.Time // Самая ранняя и поздняя точки
 }
 
-func CollectMetrics(series []Series) SeriesMetrics {
+func CollectMetrics(series []*Series) SeriesMetrics {
 	var m SeriesMetrics
 	m.TotalSeries = len(series)
 

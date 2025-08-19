@@ -5,13 +5,17 @@ import (
 	"time"
 )
 
-type WindowedSeriesBuilder struct {
+type WindowedAlgorithm struct {
 	maxTimeGap   time.Duration
 	maxValueDiff float64
 }
 
+func (a *WindowedAlgorithm) Name() string {
+	return "WindowedAlgorithm"
+}
+
 // на основе временного окна и кластеризации значений
-func (b *WindowedSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Point) []Series {
+func (b *WindowedAlgorithm) AddPoints(activeSeries []*Series, newPoints []Point) []*Series {
 	for _, pt := range newPoints {
 		matched := false
 		for i := range activeSeries {
@@ -23,7 +27,7 @@ func (b *WindowedSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Poi
 			}
 		}
 		if !matched {
-			activeSeries = append(activeSeries, Series{Points: []Point{pt}})
+			activeSeries = append(activeSeries, &Series{Points: []Point{pt}})
 		}
 	}
 	return activeSeries

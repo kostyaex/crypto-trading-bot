@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const TimeFormatForHuman = "2006-01-02 15:04:05"
+
 // Чтобы обрезать путь до указанного каталога
 func TrimPathToDir(fullPath string, targetDir string) (string, error) {
 	// // Нормализация пути

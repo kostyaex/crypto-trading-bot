@@ -21,7 +21,7 @@ func TestNewSeriesBuilder(t *testing.T) {
 		panic(err)
 	}
 
-	var series []Series
+	var series []*Series
 
 	now := time.Now()
 
@@ -32,14 +32,14 @@ func TestNewSeriesBuilder(t *testing.T) {
 		{Value: 101.0, Weight: 3.0, Time: now},
 		{Value: 110.0, Weight: 2.0, Time: now},
 	}
-	series = builder.AddPoints(series, points1)
+	series = builder.algorithm.AddPoints(series, points1)
 
 	// Итерация 2
 	points2 := []Point{
 		{Value: 102.0, Weight: 4.0, Time: now.Add(2 * time.Second)},
 		{Value: 200.0, Weight: 1.0, Time: now.Add(2 * time.Second)},
 	}
-	series = builder.AddPoints(series, points2)
+	series = builder.algorithm.AddPoints(series, points2)
 
 	// Вывод
 	for i, s := range series {

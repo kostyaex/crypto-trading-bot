@@ -2,13 +2,17 @@ package series
 
 import "math"
 
-type SimpleSeriesBuilder struct {
+type SimpleAlgorithm struct {
 	valueFactor float64
 	timeFactor  float64
 }
 
+func (a *SimpleAlgorithm) Name() string {
+	return "SimpleAlgorithm"
+}
+
 // Формирование серий по сопоставлению последней точки серии с добавляемыми
-func (b *SimpleSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Point) []Series {
+func (b *SimpleAlgorithm) AddPoints(activeSeries []*Series, newPoints []Point) []*Series {
 
 	// Точки с одинаковым временем, не должны попадать в одну серию
 
@@ -40,7 +44,7 @@ func (b *SimpleSeriesBuilder) AddPoints(activeSeries []Series, newPoints []Point
 		if bestMatch != -1 && minScore < 1.0 {
 			activeSeries[bestMatch].Points = append(activeSeries[bestMatch].Points, pt)
 		} else {
-			activeSeries = append(activeSeries, Series{Points: []Point{pt}})
+			activeSeries = append(activeSeries, &Series{Points: []Point{pt}})
 		}
 	}
 	return activeSeries
