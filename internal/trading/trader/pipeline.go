@@ -1,9 +1,9 @@
 package trader
 
 import (
+	"context"
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/core/utils"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/service/marketdata/sources"
@@ -23,9 +23,14 @@ type Pipeline struct {
 	Dispatcher    *dispatcher.Dispatcher
 }
 
-func (p *Pipeline) Run() error {
+// Обновить правила
+func (p *Pipeline) UpdateDispatcher(Dispatcher *dispatcher.Dispatcher) {
+	p.Dispatcher = Dispatcher
+}
 
-	var currentTime int64
+func (p *Pipeline) Run(ctx context.Context) error {
+
+	//var currentTime int64
 	var backtestConext *BacktestContext
 
 	defer p.DataSource.Close()
@@ -49,16 +54,16 @@ func (p *Pipeline) Run() error {
 	// Выбираем данные из источника (через канал)
 	for marketData := range p.DataSource.GetMarketDataCh() {
 
-		// Этап 1. Получение данных по текущему интервалу (время, цена)
-		// Также получение текущего PNL по открытым позициям
-		if p.Mode == "live" {
-			currentTime = time.Now().Unix()
-		} else {
-			currentTime = marketData.Timestamp.Unix()
+		// // Этап 1. Получение данных по текущему интервалу (время, цена)
+		// // Также получение текущего PNL по открытым позициям
+		// if p.Mode == "live" {
+		// 	currentTime = time.Now().Unix()
+		// } else {
+		// 	currentTime = marketData.Timestamp.Unix()
 
-		}
+		// }
 
-		p.Logger.Debugf("CURRENT TIME: %s\n", time.Unix(currentTime, 0).Format(utils.TimeFormatForHuman))
+		// p.Logger.Debugf("CURRENT TIME: %s\n", time.Unix(currentTime, 0).Format(utils.TimeFormatForHuman))
 
 		// ---------------------------------------------------------------------
 

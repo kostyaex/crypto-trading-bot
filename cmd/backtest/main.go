@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
@@ -11,8 +12,10 @@ import (
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
 	"crypto-trading-bot/internal/trading/trader"
-	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -54,6 +57,53 @@ func NewBasicServices() basicServices {
 
 func main() {
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// // === Запускаем менеджер ===
+	// if err := manager.LoadAndStartAll(); err != nil {
+	//     log.Printf("Warning: failed to start some strategies: %v", err)
+	// }
+
+	// === Перехватываем сигналы ===
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-c
+		log.Printf("Received signal: %s. Shutting down gracefully...", sig)
+		cancel() // ← отменяем контекст → остановка всех Runner'ов
+
+		// Дополнительная задержка на завершение (опционально)
+		time.Sleep(1 * time.Second)
+		os.Exit(0)
+	}()
+
+	// ===  ===
+
+	run(ctx, cancel)
+
+	// // === Запускаем веб-сервер ===
+	// r := gin.Default()
+	// web.SetupRoutes(r, manager)
+
+	// go func() {
+	//     if err := r.Run(":8080"); err != nil {
+	//         log.Printf("Server error: %v", err)
+	//     }
+	// }()
+
+	// === Ждём отмены контекста ===
+	<-ctx.Done()
+
+	log.Println("Graceful shutdown...")
+
+	// // Можно добавить дополнительную очистку
+	// manager.StopAll() // явная остановка всех стратегий (если нужно)
+
+	log.Println("Bye!")
+}
+
+func run(ctx context.Context, cancel context.CancelFunc) {
 	basicServices := NewBasicServices()
 
 	basicServices.logger.Debugf("Запуск бектеста...")
@@ -106,7 +156,9 @@ func main() {
 
 	//testData := sources.GenerateTestMarketData(10)
 
-	source := sources.NewMockMarketDataSource(marketData)
+	//source := sources.NewMockMarketDataSource(marketData)
+
+	source := sources.NewHistoricalSource(marketData, ctx)
 
 	// ---------------------------------------------------------------------
 
@@ -118,7 +170,7 @@ func main() {
 
 	// ---------------------------------------------------------------------
 
-	pipeline := trader.Pipeline{
+	pipeline := &trader.Pipeline{
 		Conf:          basicServices.conf,
 		Logger:        basicServices.logger,
 		Mode:          "backtest",
@@ -128,8 +180,21 @@ func main() {
 		Dispatcher:    disp,
 	}
 
-	err = pipeline.Run()
-	if err != nil {
-		fmt.Printf("Ошибка при запуске пайплайна: %v\n", err)
-	}
+	// ---------------------------------------------------------------------
+
+	// err = pipeline.Run(ctx)
+	// if err != nil {
+	// 	fmt.Printf("Ошибка при запуске пайплайна: %v\n", err)
+	// }
+
+	// Теперь запускаем пайплайн через Runner
+	runner := trader.NewRunner(strategy, pipeline)
+
+	runner.Start(ctx)
+	log.Printf("Runner запущен.")
+
+	// Ожидаем завершения runner'а
+	<-runner.Done()
+	log.Printf("Runner выполнился. Завершаем работу.")
+	cancel()
 }

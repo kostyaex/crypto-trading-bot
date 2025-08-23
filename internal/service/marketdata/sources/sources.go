@@ -1,6 +1,9 @@
 package sources
 
-import "crypto-trading-bot/internal/models"
+import (
+	"context"
+	"crypto-trading-bot/internal/models"
+)
 
 // Источник данных (база данных или загруженные с биржи данные)
 type MarketDataSource interface {
@@ -12,19 +15,32 @@ type MarketDataSource interface {
 // источник исторических данных из БД
 type HistoricalSource struct {
 	data []*models.MarketData
+	ctx  context.Context
 }
 
-func NewHistoricalSource(data []*models.MarketData) *HistoricalSource {
-	return &HistoricalSource{data: data}
+func NewHistoricalSource(data []*models.MarketData, ctx context.Context) *HistoricalSource {
+	return &HistoricalSource{
+		data: data,
+		ctx:  ctx,
+	}
 }
 
 func (h *HistoricalSource) GetMarketDataCh() <-chan *models.MarketData {
 	ch := make(chan *models.MarketData)
 	go func() {
+		defer close(ch)
+
 		for _, item := range h.data {
-			ch <- item
+
+			// помещаем в выходной канал данные с проверкой контекста на завершение выполнения
+			select {
+			case ch <- item:
+			case <-h.ctx.Done():
+				return
+			}
+
 		}
-		close(ch)
+
 	}()
 	return ch
 }
