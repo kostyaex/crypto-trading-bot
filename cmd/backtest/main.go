@@ -133,11 +133,41 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 
 	// ---------------------------------------------------------------------
 
-	disp := dispatcher.NewDispatcher(
-		&dispatcher.VolumeTrendRule{MinVolumeChangePercent: 10},
-	)
-	disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
-	disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
+	// disp := dispatcher.NewDispatcher(
+	// 	&dispatcher.VolumeTrendRule{MinVolumeChangePercent: 10},
+	// )
+	// disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
+	// disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
+	dispatcherCondig := `{
+  "rules": [
+    {
+      "type": "volume_trand",
+      "config": {
+        "min_volume_change_percent": 10.0
+      }
+    }
+  ],
+  "handlers": {
+    "buy": [
+      {
+        "type": "logger",
+        "config": {}
+      }
+    ],
+    "sell": [
+      {
+        "type": "logger",
+        "config": {}
+      }
+    ],
+    "hold": []
+  }
+}`
+	disp, err := dispatcher.NewDispatcherFromJSON([]byte(dispatcherCondig))
+	if err != nil {
+		basicServices.logger.Errorf("Ошибка формирования диспетчера %v", err)
+		return
+	}
 
 	// ---------------------------------------------------------------------
 

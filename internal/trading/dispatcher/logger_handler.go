@@ -17,3 +17,7 @@ func (l *LoggerHandler) Handle(signal TradeSignal) {
 		signal.Symbol,
 		signal.Description)
 }
+
+func NewLoggerHandler(config map[string]interface{}) (ActionHandler, error) {
+	return &LoggerHandler{}, nil
+}

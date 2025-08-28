@@ -1,6 +1,9 @@
 package dispatcher
 
-import "crypto-trading-bot/internal/service/series"
+import (
+	"crypto-trading-bot/internal/service/series"
+	"fmt"
+)
 
 type VolumeTrendRule struct {
 	MinVolumeChangePercent float64 // минимальный процент изменения объема
@@ -41,4 +44,12 @@ func (r *VolumeTrendRule) Evaluate(series *series.Series) (TradeSignal, bool) {
 	}
 
 	return TradeSignal{Type: SignalHold}, false
+}
+
+func NewVolumeTrendRule(config map[string]interface{}) (SignalRule, error) {
+	min_volume_change_percent, ok := config["min_volume_change_percent"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'min_volume_change_percent'")
+	}
+	return &VolumeTrendRule{MinVolumeChangePercent: min_volume_change_percent}, nil
 }

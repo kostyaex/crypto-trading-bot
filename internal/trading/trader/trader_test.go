@@ -1,6 +1,7 @@
 package trader
 
 import (
+	"context"
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
@@ -112,7 +113,7 @@ func Test_GroupingAndBroadcasting(t *testing.T) {
 		{Timestamp: time.Now().Add(time.Minute), OpenPrice: 30100, Volume: 150},
 	}
 
-	source := sources.NewHistoricalSource(testData)
+	source := sources.NewHistoricalSource(testData, context.Background())
 	broadcaster := marketdata.NewBroadcaster(source.GetMarketDataCh())
 	broadcaster.Start()
 

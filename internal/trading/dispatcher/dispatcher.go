@@ -19,12 +19,6 @@ type TradeSignal struct {
 
 type SignalType string
 
-const (
-	SignalBuy  SignalType = "buy"
-	SignalSell SignalType = "sell"
-	SignalHold SignalType = "hold"
-)
-
 type SignalRule interface {
 	Evaluate(series *series.Series) (TradeSignal, bool)
 }
