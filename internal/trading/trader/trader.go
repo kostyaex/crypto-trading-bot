@@ -30,10 +30,7 @@ func NewTraderService(conf *config.Config, logger *logger.Logger, marketDataServ
 func groupStrategiesBySymbolInterval(strategies []models.Strategy) map[string][]models.Strategy {
 	grouped := make(map[string][]models.Strategy)
 	for _, strategy := range strategies {
-		settings, err := strategy.Settings()
-		if err != nil {
-			panic("Не удалось получить параметры стратегии")
-		}
+		settings := strategy.Settings
 
 		key := fmt.Sprintf("%s|%s", settings.Symbol, settings.Interval)
 		grouped[key] = append(grouped[key], strategy)

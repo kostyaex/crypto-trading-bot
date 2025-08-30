@@ -1,7 +1,6 @@
 package models
 
 import (
-	"crypto-trading-bot/internal/core/utils"
 	"encoding/json"
 
 	"github.com/mitchellh/mapstructure"
@@ -9,64 +8,47 @@ import (
 
 // Strategy представляет торговую стратегию
 type Strategy struct {
-	ID                  int             `db:"id"`
-	Name                string          `db:"name"`
-	Description         string          `db:"description"`
-	Config              json.RawMessage `db:"config"`
-	Active              bool            `db:"active"`
-	SeriesBuilderConfig map[string]interface{}
+	ID          int             `db:"id"`
+	Name        string          `db:"name"`
+	Description string          `db:"description"`
+	Config      json.RawMessage `db:"config"`
+	Active      bool            `db:"active"`
+	Settings    StrategySettings
 }
-
-// для добавления полей в интерактивное поле см strategy_settings_field.templ
-
-type StrategySettings struct {
-	Symbol              string                 `mapstructure:"symbol"`   // используемая пара
-	Interval            string                 `mapstructure:"interval"` // используемый интервал для выборки данных биржи
-	Cluster             ClusterSettings        `mapstructure:"cluster"`
-	SeriesBuilderConfig map[string]interface{} `mapstructure:"series_builder_config"`
-}
-
-type ClusterSettings struct {
-	NumClusters int    `mapstructure:"num_clusters"`
-	Block       int    `mapstructure:"block"`    // сколько записей торговых данных группировать в кластер
-	Interval    string `mapstructure:"interval"` // результирующий интервал сгруппированных записей
-}
-
-// type WawesSettings struct {
-// 	NumClusters int `mapstructure:"num_clusters" name:"Количество кластеров" description:""`
-// }
 
 // NewStrategy создает новую торговую стратегию
-func NewStrategy(name, description string, settings StrategySettings) (*Strategy, error) {
+// func NewStrategy(name, description string, settings StrategySettings) (*Strategy, error) {
 
-	configJSON, err := utils.StructToJSON(settings)
-	if err != nil {
-		return nil, err
-	}
+// 	configJSON, err := utils.StructToJSON(settings)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &Strategy{
-		Name:                name,
-		Description:         description,
-		Config:              []byte(configJSON),
-		Active:              true,
-		SeriesBuilderConfig: settings.SeriesBuilderConfig,
-	}, nil
-}
+// 	return &Strategy{
+// 		Name:                name,
+// 		Description:         description,
+// 		Config:              []byte(configJSON),
+// 		Active:              true,
+// 		SeriesBuilderConfig: settings.SeriesBuilderConfig,
+// 	}, nil
+// }
 
 // Распаковывает JSON поле в структуру настроек
-func (s *Strategy) Settings() (*StrategySettings, error) {
+func (s *Strategy) UpdateSettingsFromConf() error {
 	var config map[string]interface{}
 	if err := json.Unmarshal(s.Config, &config); err != nil {
-		return nil, err
+		return err
 	}
 
 	var settings StrategySettings
 	err := mapstructure.Decode(config, &settings)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &settings, nil
+	s.Settings = settings
+
+	return nil
 }
 
 // // метаданные поля настроек. Читается из тегов полей стркутур *Settings

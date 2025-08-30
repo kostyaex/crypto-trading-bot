@@ -12,6 +12,7 @@ import (
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
 	"crypto-trading-bot/internal/trading/trader"
+	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
@@ -110,21 +111,28 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 
 	// ---------------------------------------------------------------------
 
-	// Пример конфигурации построения сериий
-	config := map[string]interface{}{
-		"type":         "simple",
-		"value_factor": 1.0,
-		"time_factor":  0.001,
+	strategyConf := `{
+		"symbol": "BTCUSDT",
+		"interval": "1s",
+		"cluster": {
+			"num_clusters": 5,
+			"block": 300,
+			"interval": "5m"
+		},
+		"series_builder": {
+			"type": "simple",
+			"value_factor": 1.0,
+			"time_factor": 0.001
+		}
+	}`
+
+	strategy := models.Strategy{
+		ID:     1,
+		Name:   "test-strategy",
+		Config: json.RawMessage(strategyConf),
 	}
 
-	// ---------------------------------------------------------------------
-	strategySettings := models.StrategySettings{
-		Symbol:              "BTCUSDT",
-		Interval:            "1s",
-		Cluster:             models.ClusterSettings{NumClusters: 5, Block: 300, Interval: "5m"},
-		SeriesBuilderConfig: config,
-	}
-	strategy, err := models.NewStrategy("test-strategy", "", strategySettings)
+	err := strategy.UpdateSettingsFromConf()
 
 	if err != nil {
 		basicServices.logger.Errorf("Ошибка создания новой стратегии %v", err)
@@ -169,6 +177,8 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		return
 	}
 
+	strategySettings := strategy.Settings
+
 	// ---------------------------------------------------------------------
 
 	// Подготовка тестовых данных
@@ -192,7 +202,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 
 	// ---------------------------------------------------------------------
 
-	seriesBuilder, err := series.NewSeriesBuilder(strategy.SeriesBuilderConfig)
+	seriesBuilder, err := series.NewSeriesBuilder(strategySettings.SeriesBuilderConfig)
 	if err != nil {
 		basicServices.logger.Errorf("Ошибка формирования построителя серий: %s\n", err)
 		return
@@ -205,7 +215,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		Logger:        basicServices.logger,
 		Mode:          "backtest",
 		DataSource:    source,
-		Strategy:      *strategy,
+		Strategy:      strategy,
 		SeriesBuilder: seriesBuilder,
 		Dispatcher:    disp,
 	}
@@ -218,7 +228,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	// }
 
 	// Теперь запускаем пайплайн через Runner
-	runner := trader.NewRunner(strategy, pipeline)
+	runner := trader.NewRunner(&strategy, pipeline)
 
 	runner.Start(ctx)
 	log.Printf("Runner запущен.")

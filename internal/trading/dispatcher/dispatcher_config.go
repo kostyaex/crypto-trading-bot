@@ -1,14 +1,15 @@
 package dispatcher
 
 import (
+	"crypto-trading-bot/internal/models"
 	"encoding/json"
 	"fmt"
 )
 
 const (
-	SignalBuy  SignalType = "buy"
-	SignalSell SignalType = "sell"
-	SignalHold SignalType = "hold"
+	SignalBuy  models.SignalType = "buy"
+	SignalSell models.SignalType = "sell"
+	SignalHold models.SignalType = "hold"
 )
 
 var (
@@ -23,10 +24,7 @@ func init() {
 }
 
 func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
-	var config struct {
-		Rules    []RuleConfig                   `json:"rules"`
-		Handlers map[SignalType][]HandlerConfig `json:"handlers"`
-	}
+	var config models.DispatcherSettings
 
 	if err := json.Unmarshal(jsonData, &config); err != nil {
 		return nil, err
@@ -65,14 +63,4 @@ func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
 	}
 
 	return dispatcher, nil
-}
-
-type RuleConfig struct {
-	Type   string                 `json:"type"`
-	Config map[string]interface{} `json:"config"`
-}
-
-type HandlerConfig struct {
-	Type   string                 `json:"type"`
-	Config map[string]interface{} `json:"config"`
 }

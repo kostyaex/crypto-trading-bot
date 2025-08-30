@@ -35,14 +35,11 @@ func (p *Pipeline) Run(ctx context.Context) error {
 
 	defer p.DataSource.Close()
 
-	strategySettings, err := p.Strategy.Settings()
-	if err != nil {
-		return err
-	}
+	strategySettings := p.Strategy.Settings
 
 	if p.Mode == "backtest" {
 		backtestConext = &BacktestContext{
-			StrategySettings: strategySettings,
+			StrategySettings: &strategySettings,
 			Timestamp:        time.Now().Format("2006-01-02T15:04:05Z"),
 		}
 	}
