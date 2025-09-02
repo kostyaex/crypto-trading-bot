@@ -1,4 +1,4 @@
-package models
+package types
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 )
 
 const TimeFormat string = "02.01.2006 15:04:05"
+
+// ЗДЕСЬ НЕ ДОЛЖНО БЫТЬ ДИРЕКТИВ db!!
 
 // MarketDataStatus представляет модель MarketDataStatus.
 type MarketDataStatus struct {
@@ -56,38 +58,3 @@ func MarketDataToString(md []*MarketData) string {
 
 	return s.String()
 }
-
-// type ClusterData struct {
-// 	Timestamp    time.Time `db:"timestamp"`
-// 	Symbol       string    `db:"symbol"`
-// 	TimeFrame    string    `db:"time_frame"`
-// 	IsBuySell    bool      `db:"is_buysell"`
-// 	ClusterPrice float64   `db:"buy_cluster"`
-// 	Volume       float64   `db:"volume"`
-// }
-
-// type MarketWave struct {
-// 	Start  time.Time `json:"start"`
-// 	Stop   time.Time `json:"stop"`
-// 	Symbol string    `json:"symbol"`
-// 	//IsBuySell        bool      `db:"is_buysell"`
-// 	//ClusterPrice float64
-// 	Points []MarketWavePoint `json:"points"`
-// }
-
-// type MarketWavePoint struct {
-// 	Timestamp     time.Time            `json:"timestamp"`
-// 	Price         float64              `json:"price"`
-// 	Volume        float64              `json:"volume"`
-// 	BuyVolume     float64              `json:"buyvolume"`
-// 	SellVolume    float64              `json:"sellvolume"`
-// 	ClusterPoints []calc.WeightedPoint `json:"cluster_points"`
-// }
-
-// func (wave *MarketWave) String() string {
-// 	if len(wave.Points) == 0 {
-// 		return fmt.Sprintf("%s", wave.Start.Format("02.01.2006 15:04:05"))
-// 	}
-
-// 	return fmt.Sprintf("%s-%f", wave.Start.Format("02.01.2006 15:04:05"), wave.Points[0].Price)
-// }

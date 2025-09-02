@@ -1,4 +1,4 @@
-package models
+package types
 
 // для добавления полей в интерактивное поле см strategy_settings_field.templ
 

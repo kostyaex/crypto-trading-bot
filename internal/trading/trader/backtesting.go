@@ -1,20 +1,20 @@
 package trader
 
 import (
-	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/series"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"os"
 )
 
 type BacktestContext struct {
 	//StrategyParams map[string]interface{} `json:"strategy_params"`
-	StrategySettings *models.StrategySettings
+	StrategySettings *types.StrategySettings
 	//IntermediateResults []map[string]interface{} `json:"intermediate_results"`
-	Timestamp           string               `json:"timestamp"`
-	MarketData          []*models.MarketData `json:"marketdata"`
-	ClusteredMarketData []*models.MarketData `json:"clustered_marketdata"`
-	SeriesList          []*series.Series     `json:"series_list"`
+	Timestamp           string              `json:"timestamp"`
+	MarketData          []*types.MarketData `json:"marketdata"`
+	ClusteredMarketData []*types.MarketData `json:"clustered_marketdata"`
+	SeriesList          []*series.Series    `json:"series_list"`
 }
 
 // func (s *traderService) RunBacktesting(strategy *models.Strategy, startTime, endTime time.Time) {

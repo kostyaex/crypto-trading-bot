@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,7 +26,7 @@ func NewHuobi(apiKey, apiSecret string, logger *logger.Logger) *Huobi {
 }
 
 // GetMarketData получает рыночные данные с Huobi по указанному символу, интервалу и начальной дате.
-func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
+func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*types.MarketData, lastTime time.Time, err error) {
 	// Преобразование startTime в миллисекунды с начала эпохи Unix
 	startTimestamp := startTime.UnixNano() / int64(time.Millisecond)
 
@@ -58,7 +58,7 @@ func (h *Huobi) GetMarketData(symbol, interval string, startTime time.Time) (mar
 		timestamp := time.Unix(int64(kline.ID), 0)
 		lastTime = timestamp
 
-		marketData = append(marketData, &models.MarketData{
+		marketData = append(marketData, &types.MarketData{
 			Symbol:     symbol,
 			OpenPrice:  kline.Open,
 			ClosePrice: kline.Close,

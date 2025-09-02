@@ -1,4 +1,4 @@
-package models
+package types
 
 type SignalType string
 
@@ -15,4 +15,8 @@ type RuleSettings struct {
 type HandlerSettings struct {
 	Type   string                 `json:"type"`
 	Config map[string]interface{} `json:"config"`
+}
+
+func (c DispatcherSettings) GetComponentType() string {
+	return "dispatcher"
 }

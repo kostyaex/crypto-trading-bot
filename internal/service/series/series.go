@@ -1,7 +1,7 @@
 package series
 
 import (
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,10 +10,10 @@ import (
 )
 
 type Point struct {
-	Value      float64            `json:"value"`
-	Weight     float64            `json:"weight"`
-	Time       time.Time          `json:"time"`
-	MarketData *models.MarketData `json:"market_data"` // основание по которому формировалась точка
+	Value      float64           `json:"value"`
+	Weight     float64           `json:"weight"`
+	Time       time.Time         `json:"time"`
+	MarketData *types.MarketData `json:"market_data"` // основание по которому формировалась точка
 }
 
 type Series struct {

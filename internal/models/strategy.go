@@ -1,6 +1,7 @@
 package models
 
 import (
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 
 	"github.com/mitchellh/mapstructure"
@@ -13,7 +14,7 @@ type Strategy struct {
 	Description string          `db:"description"`
 	Config      json.RawMessage `db:"config"`
 	Active      bool            `db:"active"`
-	Settings    StrategySettings
+	Settings    types.StrategySettings
 }
 
 // NewStrategy создает новую торговую стратегию
@@ -40,7 +41,7 @@ func (s *Strategy) UpdateSettingsFromConf() error {
 		return err
 	}
 
-	var settings StrategySettings
+	var settings types.StrategySettings
 	err := mapstructure.Decode(config, &settings)
 	if err != nil {
 		return err

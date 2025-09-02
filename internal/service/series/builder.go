@@ -1,7 +1,7 @@
 package series
 
 import (
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"fmt"
 	"sync"
 	"time"
@@ -42,7 +42,7 @@ func NewSeriesBuilder(config map[string]interface{}) (*SeriesBuilder, error) {
 	}
 }
 
-func (builder *SeriesBuilder) AddClusteredData(newData []*models.MarketData) {
+func (builder *SeriesBuilder) AddClusteredData(newData []*types.MarketData) {
 	builder.mutex.Lock()
 	defer builder.mutex.Unlock()
 

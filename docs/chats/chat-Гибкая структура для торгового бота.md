@@ -3294,3 +3294,1556 @@ func main() {
 - Легко масштабировать: завтра можно вынести API в отдельный сервис.
 
 Если хочешь — могу показать, как `internal/web` может вызывать `internal/api` через `http.Client` или напрямую.
+
+### USER
+как зарегистрировать несколько компонентов одного типа для запуска одной сессии в разных режимах: тестирования, бектеста, реального режима
+
+### ASSISTANT
+Отличный вопрос! Ты хочешь запускать **несколько экземпляров одного и того же типа компонента** (например, `trading` или `risk`) в рамках **одной торговой сессии**, но в **разных режимах**:  
+- **бумажная торговля (paper trading)**  
+- **бектест (backtest)**  
+- **реальный режим (live)**  
+- **тестирование конфигурации (testing)**
+
+При этом:
+- Один и тот же компонент (например, `trading`) должен работать по-разному в зависимости от режима.
+- Все режимы могут быть запущены **в одной сессии параллельно** для сравнения.
+- Конфигурации должны быть **версионированы и переиспользуемы**.
+
+---
+
+## ✅ Решение: разделить **тип компонента** и **режим работы** через:
+
+1. **Регистрацию компонентов с суффиксом режима**
+2. **Фабрику, которая создаёт разные реализации по режиму**
+3. **Сессию, которая ссылается на нужные варианты**
+
+---
+
+## 1. 🧱 Архитектурный принцип
+
+> ❌ Не:  
+> ```go
+> engine.New("trading", config) // и как понять — в каком режиме?
+> ```
+
+> ✅ А:  
+> ```go
+> engine.New("trading:live", config)
+> engine.New("trading:backtest", config)
+> engine.New("trading:paper", config)
+> ```
+
+Или через параметры:
+```go
+engine.New("trading", config, WithMode("backtest"))
+```
+
+Но первый способ проще для `templ` и API.
+
+---
+
+## 2. 🔧 Реализация: регистрируем несколько реализаций
+
+### Пример: разные реализации `trading` компонента
+
+```go
+// internal/components/trading/live.go
+func init() {
+    engine.RegisterComponent("trading:live", NewLiveTradingFactory())
+}
+
+// internal/components/trading/backtest.go
+func init() {
+    engine.RegisterComponent("trading:backtest", NewBacktestTradingFactory())
+}
+
+// internal/components/trading/paper.go
+func init() {
+    engine.RegisterComponent("trading:paper", NewPaperTradingFactory())
+}
+```
+
+Каждая фабрика создаёт свою реализацию:
+
+```go
+func NewLiveTradingFactory() engine.ComponentFactory {
+    return func(config types.ComponentConfig, logger *log.Logger) (*engine.Component, error) {
+        return &engine.Component{
+            Runnable: &LiveExecutor{Config: config, Logger: logger},
+        }, nil
+    }
+}
+```
+
+Аналогично — `BacktestExecutor`, `PaperExecutor`.
+
+---
+
+## 3. 📦 Структура проекта
+
+```bash
+internal/components/trading/
+├── live.go
+├── backtest.go
+├── paper.go
+├── common.go        // общая логика, если есть
+└── register_all.go  // опционально: регистрирует все режимы
+```
+
+---
+
+## 4. 📄 Конфигурация: разные варианты настроек
+
+В системе создаются **разные варианты настроек** компонента:
+
+| Variant ID | Type | Назначение |
+|-----------|------|------------|
+| `trade_live_usdt` | `trading:live` | Реальная торговля |
+| `trade_paper_btc` | `trading:paper` | Бумажная торговля |
+| `trade_backtest_v1` | `trading:backtest` | Бектест |
+
+Они хранятся в `component_variant_heads` и `versions`.
+
+---
+
+## 5. 🧪 Сессия: компоновка по режимам
+
+```go
+session := TradingSession{
+    ID: "compare-strategy-001",
+    ComponentRefs: map[string]ComponentRef{
+        "trading": {
+            VariantID: "trade_config_v1",  // один и тот же базовый конфиг
+            // но режим задаётся через тип компонента
+        },
+        "mode:live": {
+            VariantID: "trade_live_usdt",
+            // ссылается на реализацию trading:live
+        },
+        "mode:paper": {
+            VariantID: "trade_paper_btc",
+            // ссылается на реализацию trading:paper
+        },
+        "mode:backtest": {
+            VariantID: "trade_backtest_v1",
+            // ссылается на реализацию trading:backtest
+        },
+    },
+}
+```
+
+> 💡 Можно упростить:  
+> ```go
+> "trading:live", "trading:paper", "trading:backtest"
+> ```
+> как отдельные ключи в `ComponentRefs`.
+
+---
+
+## 6. 🏗️ Реализация в `RunTradingEngine`
+
+```go
+func runPipeline(ctx context.Context, components map[string]*engine.Component) error {
+    var eg errgroup.Group
+
+    // Запускаем все trading-режимы параллельно
+    for name, comp := range components {
+        if strings.HasPrefix(name, "trading:") || strings.HasPrefix(name, "mode:") {
+            if runnable := comp.Runnable; runnable != nil {
+                eg.Go(func() error {
+                    return runnable.Run(ctx)
+                })
+            }
+        }
+    }
+
+    return eg.Wait()
+}
+```
+
+Каждый режим:
+- Получает одинаковые сигналы (если нужно).
+- Исполняет их по-своему.
+- Пишет в разные логи/истории.
+
+---
+
+## 7. 🌐 API и `templ`: выбор режима
+
+### В веб-интерфейсе (`templ`) можно:
+
+```templ
+// Выбор режима при создании сессии
+templ ModeSelector() {
+  <div>
+    <label>
+      <input type="checkbox" name="modes" value="live" />
+      Live
+    </label>
+    <label>
+      <input type="checkbox" name="modes" value="paper" />
+      Paper Trading
+    </label>
+    <label>
+      <input type="checkbox" name="modes" value="backtest" />
+      Backtest
+    </label>
+  </div>
+}
+```
+
+При сохранении сессии:
+- Создаются ссылки на `trading:live`, `trading:paper` и т.д.
+- Используются нужные `variant_id`.
+
+---
+
+## 8. ✅ Альтернатива: один тип, параметр режима
+
+Если реализации похожи, можно:
+
+```go
+engine.RegisterComponent("trading", NewTradingFactory())
+```
+
+А в конфиг добавить:
+
+```go
+type TradingConfig struct {
+    Mode   string  `json:"mode"` // "live", "paper", "backtest"
+    Amount float64 `json:"amount"`
+}
+```
+
+Тогда одна фабрика, но поведение зависит от `config.Mode`.
+
+> ✅ Плюс: меньше кода.  
+> ❌ Минус: сложнее тестировать отдельно, жёсткая связка.
+
+---
+
+## ✅ Итог: рекомендация
+
+| Задача | Решение |
+|------|--------|
+| Запуск одного компонента в разных режимах | **Регистрируй отдельные типы**: `trading:live`, `trading:backtest` |
+| Управление конфигами | **Разные `variant_id`** для каждого режима |
+| Сессия | **Ссылается на нужные типы** в `ComponentRefs` |
+| Веб-интерфейс (`templ`) | Позволяет выбрать режимы и комбинировать |
+| API | Возвращает список доступных типов: `GET /api/components/types → ["trading:live", "trading:paper"]` |
+
+---
+
+## 🚀 Преимущества такого подхода
+
+- Можно **сравнивать стратегии** в разных режимах.
+- **Изолированные риски**: бектест не затрагивает реальные ордера.
+- **Гибкость**: можно запустить только бектест, или live + paper.
+- **Воспроизводимость**: каждый режим использует свою версию конфига.
+
+---
+
+Если хочешь — могу показать пример `templ`-формы для создания сессии с выбором режимов и предварительной загрузкой конфигов.
+
+### USER
+объясни этот блок 
+```
+samplingComp, ok := comp.Runnable.(interface{ Run(ctx context.Context, output chan<- *Candle) error })
+        if !ok {
+            return fmt.Errorf("sampling must support Run(output)")
+        }
+```
+
+### ASSISTANT
+Конечно! Давай разберём этот блок кода по частям:
+
+```go
+samplingComp, ok := comp.Runnable.(interface{ Run(ctx context.Context, output chan<- *Candle) error })
+if !ok {
+    return fmt.Errorf("sampling must support Run(output)")
+}
+```
+
+Этот код выполняет **проверку, поддерживает ли компонент специфичный метод `Run` с определённой сигнатурой**, а именно:
+
+```go
+Run(ctx context.Context, output chan<- *Candle) error
+```
+
+---
+
+## 🔍 Пошаговое объяснение
+
+### 1. `comp.Runnable`
+- `comp` — это объект типа `*engine.Component`, который содержит поле `Runnable types.Runnable`.
+- `types.Runnable` — это **интерфейс**:
+  ```go
+  type Runnable interface {
+      Run(ctx context.Context) error
+  }
+  ```
+- То есть по умолчанию мы знаем, что `comp.Runnable` умеет `Run(ctx)`, но **не знаем, какие ещё методы у него есть**.
+
+---
+
+### 2. `.(` и `)` — Приведение типов (type assertion)
+
+```go
+comp.Runnable.(interface{ ... })
+```
+
+Это **type assertion** — попытка проверить, реализует ли значение `comp.Runnable` указанный **анонимный интерфейс**.
+
+> ⚠️ Здесь используется **анонимный интерфейс** — интерфейс, определённый прямо в коде, без имени.
+
+---
+
+### 3. `interface{ Run(ctx context.Context, output chan<- *Candle) error }`
+
+Это **анонимный интерфейс**, описывающий тип, который:
+- Имеет метод `Run`,
+- Принимающий:
+  - `ctx context.Context`
+  - `output chan<- *Candle` (односторонний канал для отправки свечей)
+- Возвращает `error`.
+
+👉 То есть мы проверяем: **"Может ли этот компонент запускаться и отправлять данные в канал `chan<- *Candle`?"**
+
+---
+
+### 4. `samplingComp, ok := ...`
+
+- `ok` — булево значение: `true`, если `comp.Runnable` действительно реализует этот интерфейс.
+- `samplingComp` — переменная, в которую попадает **приведённый объект**, если проверка прошла успешно.
+
+> Это безопасная проверка: если тип не подходит — `ok == false`, паники не будет.
+
+---
+
+### 5. `if !ok { ... }`
+
+Если компонент **не поддерживает** нужную сигнатуру `Run`, мы возвращаем ошибку.
+
+```go
+return fmt.Errorf("sampling must support Run(output)")
+```
+
+👉 Это означает: "Компонент `sampling` должен уметь писать свечи в выходной канал".
+
+---
+
+## 💡 Зачем это нужно?
+
+Потому что интерфейс `types.Runnable` слишком общий:
+
+```go
+type Runnable interface {
+    Run(ctx context.Context) error
+}
+```
+
+Он **не говорит**, откуда компонент берёт данные или куда их отправляет.
+
+Но для `sampling` (источника данных) важно:
+- Он должен **генерировать свечи**.
+- Он должен **отправлять их в канал**.
+
+Поэтому мы **уточняем контракт** через более конкретный интерфейс.
+
+---
+
+## ✅ Пример реализации
+
+```go
+type DataSamplingComponent struct {
+    interval time.Duration
+    output   chan<- *Candle
+}
+
+func (d *DataSamplingComponent) Run(ctx context.Context, output chan<- *Candle) error {
+    ticker := time.NewTicker(d.interval)
+    for {
+        select {
+        case <-ticker.C:
+            candle := fetchCandle()
+            select {
+            case output <- candle:
+            case <-ctx.Done():
+                return ctx.Err()
+            }
+        case <-ctx.Done():
+            return ctx.Err()
+        }
+    }
+}
+```
+
+Такой компонент **подойдёт под анонимный интерфейс**, и `ok == true`.
+
+---
+
+## 🔄 Альтернатива: использовать отдельный интерфейс
+
+Можно вынести интерфейс в тип:
+
+```go
+type CandleSource interface {
+    Run(ctx context.Context, output chan<- *Candle) error
+}
+```
+
+И тогда:
+
+```go
+samplingComp, ok := comp.Runnable.(CandleSource)
+```
+
+Это чище и понятнее. Такой подход **рекомендуется** для кода, который будет поддерживаться.
+
+---
+
+## ✅ Вывод
+
+Этот блок кода:
+
+```go
+samplingComp, ok := comp.Runnable.(interface{ Run(ctx context.Context, output chan<- *Candle) error })
+if !ok {
+    return fmt.Errorf("sampling must support Run(output)")
+}
+```
+
+делает следующее:
+
+> 🔎 **Проверяет, что компонент `sampling` умеет не просто "запускаться", а именно генерировать свечи и отправлять их в канал.**
+
+Это необходимо, потому что общий интерфейс `Runnable` недостаточен для конвейера, где важна **передача данных между компонентами через каналы**.
+
+---
+
+✅ **Совет**: Замени анонимный интерфейс на именованный — будет понятнее и удобнее для тестирования.
+
+### USER
+как в runPipeline организовать доступ к каждому компоненту components через его тип вместо обращения по строке components["sampling"]. В c++ подобное реализовывались хранением components как tuple.
+
+### ASSISTANT
+Отличный вопрос! Ты хочешь **избавиться от "магических строк" вроде `components["sampling"]`** и получить **типобезопасный доступ к компонентам**, как в C++ через `std::tuple` или `std::get<SamplingComponent>(components)`.
+
+В **Go** нет шаблонов (generics до Go 1.18 были ограничены), но с **Go 1.18+** и **generics** мы можем приблизиться к такому стилю.
+
+Однако, `templ` и вся система строятся на **динамической компоновке сессий**, где состав компонентов заранее неизвестен — значит, **полностью типобезопасный `tuple`-подход не подходит**.
+
+Но мы можем **сочетать безопасность и гибкость**.
+
+---
+
+## 🔍 Почему `components["sampling"]` — это нормально в твоём случае
+
+Твой `components map[string]*Component` — результат **загрузки сессии из БД**, где пользователь сам выбрал, какие компоненты использовать.
+
+👉 Это **конфигурируемая, динамическая система**, а не статическая.
+
+Поэтому:
+- `components["sampling"]` — это **не ошибка**, а отражение гибкости.
+- `map[string]` — правильная структура для такого сценария.
+
+Но ты хочешь **лучше типобезопасность и автодополнение** — и это возможно!
+
+---
+
+## ✅ Решение: **Type-safe accessor с проверкой на этапе выполнения**
+
+Мы можем создать **обёртку**, которая предоставляет методы вроде:
+
+```go
+if sampling, ok := pipeline.GetComponent[SamplingComponent]("sampling"); ok {
+    // используем sampling
+}
+```
+
+Но ещё лучше — сделать **DSL для конвейера**, где ты явно указываешь, какие компоненты ожидаешь.
+
+---
+
+## 🧱 Вариант 1: Функциональный билдер (рекомендуется)
+
+Создадим **"pipeline builder"**, который:
+- Принимает `map[string]*Component`
+- Позволяет безопасно извлечь нужные компоненты
+- Возвращает ошибку, если чего-то не хватает
+
+```go
+// pipeline/builder.go
+
+package pipeline
+
+import (
+    "fmt"
+    "context"
+    "trading-bot/internal/engine"
+)
+
+type Pipeline struct {
+    Components map[string]*engine.Component
+}
+
+func New(components map[string]*engine.Component) *Pipeline {
+    return &Pipeline{Components: components}
+}
+
+func (p *Pipeline) GetRunnable[T any](name string) (T, error) {
+    var zero T
+    comp, ok := p.Components[name]
+    if !ok {
+        return zero, fmt.Errorf("component not found: %s", name)
+    }
+
+    runnable, ok := comp.Runnable.(T)
+    if !ok {
+        return zero, fmt.Errorf("component %s does not implement %T", name, zero)
+    }
+
+    return runnable, nil
+}
+
+func (p *Pipeline) GetProcessor[T any](name string) (T, error) {
+    var zero T
+    comp, ok := p.Components[name]
+    if !ok {
+        return zero, fmt.Errorf("component not found: %s", name)
+    }
+
+    processor, ok := comp.Processor.(T)
+    if !ok {
+        return zero, fmt.Errorf("component %s does not implement %T", name, zero)
+    }
+
+    return processor, nil
+}
+```
+
+### Использование в `runPipeline`
+
+```go
+func runPipeline(ctx context.Context, components map[string]*engine.Component) error {
+    pipeline := pipeline.New(components)
+
+    samplingSrc, err := pipeline.GetRunnable(interface{ Run(context.Context, chan<- *Candle) error }{"sampling")
+    if err != nil {
+        return fmt.Errorf("failed to get sampling: %w", err)
+    }
+
+    signalGen, err := pipeline.GetRunnable((*SignalGenerator)(nil), "signals")
+    if err != nil {
+        return fmt.Errorf("failed to get signals: %w", err)
+    }
+
+    riskMgr, err := pipeline.GetProcessor((*RiskManager)(nil), "risk")
+    if err != nil {
+        return fmt.Errorf("failed to get risk: %w", err)
+    }
+
+    trader, err := pipeline.GetProcessor((*OrderExecutor)(nil), "trading")
+    if err != nil {
+        return fmt.Errorf("failed to get trading: %w", err)
+    }
+
+    // Теперь можно использовать с типобезопасностью
+    candleChan := make(chan *Candle, 10)
+    signalChan := make(chan *Signal, 10)
+
+    go samplingSrc.Run(ctx, candleChan)
+    go signalGen.Run(ctx, candleChan, signalChan)
+
+    for {
+        select {
+        case sig := <-signalChan:
+            if _, err := riskMgr.Process(ctx, sig); err != nil {
+                log.Printf("Risk rejected: %v", err)
+                continue
+            }
+            trader.Process(ctx, sig)
+        case <-ctx.Done():
+            return ctx.Err()
+        }
+    }
+}
+```
+
+---
+
+## 🧩 Вариант 2: Структура с опциональными полями (если состав компонентов известен)
+
+Если ты знаешь, что **всегда используешь одни и те же типы компонентов**, можно создать:
+
+```go
+type TradingPipeline struct {
+    Sampling   SamplingComponent   `optional:"true"`
+    Clustering ClusteringComponent `optional:"true"`
+    Signals    SignalGenerator
+    Risk       RiskManager
+    Trading    OrderExecutor
+}
+```
+
+Но это **менее гибко** — не подходит для динамических сессий.
+
+---
+
+## 🧱 Вариант 3: Генерация кода (advanced)
+
+Используй `go generate` + шаблон, чтобы сгенерировать типобезопасную обёртку на основе `ComponentRefs`.
+
+Но это избыточно, если сессии динамические.
+
+---
+
+## ✅ Вывод
+
+| Подход | Когда использовать |
+|-------|-------------------|
+| `components["sampling"]` | ✅ По умолчанию — нормально для динамических сессий |
+| **Type-safe accessor с generics** | ✅ Рекомендуется — даёт безопасность и остаётся гибким |
+| `tuple`-подобная структура | ❌ Не подходит — Go нет статической типизации как в C++ |
+| Генерация кода | 🔧 Для продвинутых сценариев |
+
+---
+
+## 💡 Итог
+
+Ты **не можешь полностью повторить C++ `tuple`** в Go, но можешь:
+
+✅ Сделать **типобезопасный доступ** через generics и интерфейсы:  
+```go
+pipeline.GetRunnable[MyInterface]("sampling")
+```
+
+✅ Сохранить **гибкость динамической компоновки** из БД.
+
+✅ Избежать ошибок вроде `components["samping"]` (опечатка).
+
+👉 Используй **pipeline builder с generics** — это лучший баланс между безопасностью и гибкостью в Go.
+
+Если хочешь — могу показать, как сделать это с автогенерацией через `go generate`.
+
+### USER
+покажи реализацию варианта 2
+
+### ASSISTANT
+Конечно! Ниже — **реализация Варианта 2**, в котором мы создаём **типобезопасную структуру-обёртку** для компонентов, подобно `tuple` в C++, чтобы обеспечить **удобный и безопасный доступ к компонентам по типу**, а не по строковому ключу вроде `components["sampling"]`.
+
+---
+
+## 🎯 Цель Варианта 2
+
+Заменить:
+```go
+sampling := components["sampling"]
+```
+
+На что-то вроде:
+```go
+pipeline := NewPipeline(components)
+if err := pipeline.Validate(); err != nil { ... }
+
+// Доступ через поля
+sampling := pipeline.Sampling
+signals := pipeline.Signals
+riskMgr := pipeline.Risk
+```
+
+Это **не `tuple` как в C++**, но в Go это реализуется через **структуру с явными полями**, что даёт:
+- Автодополнение в IDE
+- Типобезопасность
+- Читаемость
+- Возможность валидации на этапе запуска
+
+> ✅ Подходит, если состав компонентов **относительно предсказуем** (например, почти все сессии используют `sampling`, `signals`, `risk`, `trading`).
+
+---
+
+## 1. Определение типов компонентов
+
+```go
+// internal/components/types.go
+package components
+
+// Интерфейсы для типобезопасного доступа
+type CandleSource interface {
+    Run(ctx context.Context, output chan<- *Candle) error
+}
+
+type SignalGenerator interface {
+    Run(ctx context.Context, input <-chan *Candle, output chan<- *Signal) error
+}
+
+type RiskProcessor interface {
+    Process(ctx context.Context, signal *Signal) (*Signal, error)
+}
+
+type OrderExecutor interface {
+    Process(ctx context.Context, signal *Signal) error
+}
+```
+
+---
+
+## 2. Структура Pipeline (аналог tuple)
+
+```go
+// internal/pipeline/pipeline.go
+package pipeline
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "trading-bot/internal/components"
+    "trading-bot/internal/engine"
+)
+
+// Pipeline — типобезопасная обёртка над компонентами, как "tuple" компонентов
+type Pipeline struct {
+    Sampling components.CandleSource   `json:"-"`
+    Signals  components.SignalGenerator `json:"-"`
+    Risk     components.RiskProcessor   `json:"-"`
+    Trading  components.OrderExecutor   `json:"-"`
+}
+
+// Option — функция для настройки пайплайна (опционально)
+type Option func(*Pipeline) error
+
+// WithSampling — опционально добавляет sampling
+func WithSampling(comp engine.Component) Option {
+    return func(p *Pipeline) error {
+        if cs, ok := comp.Runnable.(components.CandleSource); ok {
+            p.Sampling = cs
+            return nil
+        }
+        return fmt.Errorf("component does not implement CandleSource")
+    }
+}
+
+// NewPipeline создаёт пайплайн из map[string]*engine.Component
+func NewPipeline(components map[string]*engine.Component) *Pipeline {
+    return &Pipeline{}
+}
+
+// Build заполняет поля на основе компонентов
+func (p *Pipeline) Build(components map[string]*engine.Component) error {
+    for name, comp := range components {
+        switch name {
+        case "sampling":
+            if cs, ok := comp.Runnable.(components.CandleSource); ok {
+                p.Sampling = cs
+            } else {
+                return fmt.Errorf("component 'sampling' does not implement CandleSource")
+            }
+        case "signals":
+            if sg, ok := comp.Runnable.(components.SignalGenerator); ok {
+                p.Signals = sg
+            } else {
+                return fmt.Errorf("component 'signals' does not implement SignalGenerator")
+            }
+        case "risk":
+            if rp, ok := comp.Processor.(components.RiskProcessor); ok {
+                p.Risk = rp
+            } else {
+                return fmt.Errorf("component 'risk' does not implement RiskProcessor")
+            }
+        case "trading":
+            if oe, ok := comp.Processor.(components.OrderExecutor); ok {
+                p.Trading = oe
+            } else {
+                return fmt.Errorf("component 'trading' does not implement OrderExecutor")
+            }
+        default:
+            log.Printf("Unknown component ignored: %s", name)
+        }
+    }
+    return nil
+}
+
+// Validate проверяет, что все обязательные компоненты присутствуют
+func (p *Pipeline) Validate() error {
+    if p.Sampling == nil {
+        return fmt.Errorf("missing required component: sampling")
+    }
+    if p.Signals == nil {
+        return fmt.Errorf("missing required component: signals")
+    }
+    if p.Trading == nil {
+        return fmt.Errorf("missing required component: trading")
+    }
+    return nil
+}
+```
+
+---
+
+## 3. Использование в `runPipeline`
+
+```go
+func runPipeline(
+    ctx context.Context,
+    components map[string]*engine.Component,
+    logger *log.Logger,
+) error {
+    pipeline := &Pipeline{}
+    if err := pipeline.Build(components); err != nil {
+        return fmt.Errorf("failed to build pipeline: %w", err)
+    }
+
+    if err := pipeline.Validate(); err != nil {
+        return fmt.Errorf("pipeline validation failed: %w", err)
+    }
+
+    // Теперь доступ через поля — типобезопасно!
+    candleChan := make(chan *Candle, 10)
+    signalChan := make(chan *Signal, 10)
+
+    // Запускаем sampling
+    go func() {
+        defer close(candleChan)
+        if err := pipeline.Sampling.Run(ctx, candleChan); err != nil {
+            logger.Printf("Sampling failed: %v", err)
+        }
+    }()
+
+    // Запускаем сигналы
+    go func() {
+        defer close(signalChan)
+        if err := pipeline.Signals.Run(ctx, candleChan, signalChan); err != nil {
+            logger.Printf("Signal generation failed: %v", err)
+        }
+    }()
+
+    // Обработка в основном цикле
+    for {
+        select {
+        case signal := <-signalChan:
+            if pipeline.Risk != nil {
+                if _, err := pipeline.Risk.Process(ctx, signal); err != nil {
+                    logger.Printf("Risk check failed: %v", err)
+                    continue
+                }
+            }
+            if err := pipeline.Trading.Process(ctx, signal); err != nil {
+                logger.Printf("Trade execution failed: %v", err)
+            } else {
+                logger.Printf("Trade executed: %+v", signal)
+            }
+        case <-ctx.Done():
+            return ctx.Err()
+        }
+    }
+}
+```
+
+---
+
+## ✅ Преимущества такого подхода
+
+| Плюс | Как реализовано |
+|------|-----------------|
+| **Типобезопасность** | Поля имеют конкретные интерфейсные типы |
+| **Автодополнение** | IDE показывает `pipeline.Sampling`, `pipeline.Signals` |
+| **Валидация** | `Validate()` проверяет обязательные компоненты |
+| **Читаемость** | Код выглядит как конфигурация |
+| **Гибкость** | Можно сделать опциональные поля (`Risk` может быть `nil`) |
+
+---
+
+## 🔄 Сравнение с C++ `tuple`
+
+| C++ | Go (этот вариант) |
+|-----|------------------|
+| `std::tuple<Sampling, Signals, Risk>` | `struct { Sampling, Signals, Risk }` |
+| `std::get<0>(tuple)` | `pipeline.Sampling` |
+| Статическая проверка | Проверка на этапе выполнения (`Build()`) |
+| Фиксированный размер | Фиксированная структура, но поля могут быть `nil` |
+
+👉 В Go нет `std::get<Index>`, но **структуры с именованными полями — идиоматичная замена**.
+
+---
+
+## ✅ Когда использовать этот подход
+
+- ✅ Состав компонентов **предсказуем** (всегда есть `sampling`, `signals`, `trading`)
+- ✅ Хочется **чистый, понятный код** без строковых ключей
+- ✅ Компоненты реализуют **чёткие интерфейсы**
+
+## ❌ Когда не использовать
+
+- ❌ Полностью динамические сессии (например, пользователь может добавить `ai_filter`, `sentiment`, `news_feed` на лету)
+- ❌ Очень много комбинаций компонентов
+
+---
+
+## ✅ Итог
+
+Ты реализовал **аналог `tuple` из C++** в Go с помощью:
+
+1. **Структуры `Pipeline`** с полями для каждого компонента.
+2. **Интерфейсов** для типобезопасности.
+3. **Метода `Build()`** для заполнения из `map[string]*Component`.
+4. **Метода `Validate()`** для проверки.
+
+Это даёт:
+- Безопасность
+- Читаемость
+- Поддержку IDE
+- Контроль над составом сессии
+
+Если хочешь — могу показать, как **автогенерировать** такую структуру через `go generate`, если компонентов много.
+
+### USER
+как в компоненту trading добавить возможность сохранять в базу данных информацию о произведенных операциях? как интегрировать компоненту с зависимостью от базы данных?
+
+### ASSISTANT
+Отличный вопрос! Ты хочешь, чтобы компонент `trading` **сохранял информацию о сделках в базу данных**, и при этом **корректно интегрировался с зависимостью от хранилища**.
+
+Поскольку ты используешь `templ` для веб-интерфейса и уже имеешь архитектуру с `PostgreSQL` через `sqlx`, давай реализуем это **идиоматично для Go**, соблюдая принципы:
+
+- Инъекция зависимостей
+- Разделение ответственности
+- Тестируемость
+- Совместимость с `templ` и API
+
+---
+
+## ✅ Цель
+
+Сделать так, чтобы:
+1. Компонент `trading` сохранял каждую сделку в БД.
+2. Он получал доступ к БД **через интерфейс**, а не напрямую.
+3. Данные были доступны для веб-интерфейса (`templ`).
+
+---
+
+## 1. 📦 Создать таблицу для сделок
+
+```sql
+-- migrations/0002_trades.sql
+CREATE TABLE trades (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL, -- "buy" or "sell"
+    quantity NUMERIC NOT NULL,
+    price NUMERIC NOT NULL,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status TEXT NOT NULL, -- "executed", "failed"
+    error TEXT
+);
+```
+
+> Убедись, что `gen_random_uuid()` доступен (`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`)
+
+---
+
+## 2. 🧱 Определить структуру `Trade`
+
+```go
+// pkg/types/trade.go
+package types
+
+import "time"
+
+type Trade struct {
+    ID        string    `json:"id"`
+    SessionID string    `json:"session_id"`
+    Symbol    string    `json:"symbol"`
+    Side      string    `json:"side"`
+    Quantity  float64   `json:"quantity"`
+    Price     float64   `json:"price"`
+    Timestamp time.Time `json:"timestamp"`
+    Status    string    `json:"status"`
+    Error     string    `json:"error,omitempty"`
+}
+```
+
+---
+
+## 3. 🔌 Определить интерфейс хранилища сделок
+
+```go
+// internal/storage/trade_storage.go
+package storage
+
+import "trading-bot/pkg/types"
+
+type TradeStore interface {
+    SaveTrade(trade *types.Trade) error
+    GetTradesBySession(sessionID string) ([]*types.Trade, error)
+}
+```
+
+> Это позволяет мокать хранилище в тестах.
+
+---
+
+## 4. 🛠️ Реализовать хранилище на PostgreSQL
+
+```go
+// internal/storage/postgres/trade.go
+package postgres
+
+import (
+    "context"
+    "trading-bot/internal/storage"
+    "trading-bot/pkg/types"
+)
+
+type TradeStore struct {
+    db *sqlx.DB
+}
+
+func NewTradeStore(db *sqlx.DB) storage.TradeStore {
+    return &TradeStore{db: db}
+}
+
+func (s *TradeStore) SaveTrade(trade *types.Trade) error {
+    query := `
+        INSERT INTO trades (id, session_id, symbol, side, quantity, price, timestamp, status, error)
+        VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8)
+    `
+    _, err := s.db.ExecContext(context.Background(), query,
+        trade.SessionID, trade.Symbol, trade.Side,
+        trade.Quantity, trade.Price, trade.Timestamp,
+        trade.Status, trade.Error)
+    return err
+}
+```
+
+---
+
+## 5. 🧩 Интегрировать в компонент `trading`
+
+### Обнови структуру `OrderExecutor`
+
+```go
+// internal/components/trading/live.go
+package trading
+
+import (
+    "context"
+    "trading-bot/internal/storage"
+    "trading-bot/pkg/types"
+)
+
+type LiveExecutor struct {
+    config   types.ComponentConfig
+    logger   *log.Logger
+    tradeStore storage.TradeStore // ← зависимость
+}
+
+func NewLiveExecutor(config types.ComponentConfig, logger *log.Logger, tradeStore storage.TradeStore) *LiveExecutor {
+    return &LiveExecutor{
+        config:     config,
+        logger:     logger,
+        tradeStore: tradeStore,
+    }
+}
+```
+
+### В `Process` — сохраняй сделку
+
+```go
+func (e *LiveExecutor) Process(ctx context.Context, signal *types.Signal) error {
+    // Выполняем ордер (условно)
+    execution, err := e.executeOrder(signal)
+
+    // Формируем запись о сделке
+    trade := &types.Trade{
+        SessionID: signal.SessionID,
+        Symbol:    signal.Symbol,
+        Side:      signal.Side,
+        Quantity:  signal.Quantity,
+        Price:     execution.Price,
+        Timestamp: time.Now(),
+        Status:    "executed",
+    }
+
+    if err != nil {
+        trade.Status = "failed"
+        trade.Error = err.Error()
+    }
+
+    // Сохраняем в БД
+    if err := e.tradeStore.SaveTrade(trade); err != nil {
+        e.logger.Printf("Failed to save trade: %v", err)
+        // Не прерываем выполнение — ошибка сохранения ≠ ошибка торговли
+    }
+
+    return err
+}
+```
+
+---
+
+## 6. 🔁 Обновить фабрику (реестр)
+
+```go
+// internal/components/trading/register.go
+func init() {
+    engine.RegisterComponent("trading:live", func(config types.ComponentConfig, logger *log.Logger) (*engine.Component, error) {
+        // Получаем tradeStore из глобального хранилища или передаём через замыкание
+        executor := NewLiveExecutor(config, logger, globalTradeStore)
+        return &engine.Component{Processor: executor}, nil
+    })
+}
+```
+
+> 💡 Как передать `tradeStore`? Ниже — способы.
+
+---
+
+## 7. 🔄 Как передать `tradeStore` в компонент?
+
+### Вариант A: Через глобальную переменную (просто, но не идеально)
+
+```go
+var globalTradeStore storage.TradeStore
+
+// В main.go
+globalTradeStore = postgres.NewTradeStore(db)
+```
+
+✅ Просто  
+❌ Сложно тестировать
+
+---
+
+### Вариант B: Через замыкание в фабрике (рекомендуется)
+
+```go
+// internal/components/trading/factory.go
+func NewLiveTradingFactory(tradeStore storage.TradeStore) engine.ComponentFactory {
+    return func(config types.ComponentConfig, logger *log.Logger) (*engine.Component, error) {
+        executor := NewLiveExecutor(config, logger, tradeStore)
+        return &engine.Component{Processor: executor}, nil
+    }
+}
+```
+
+### В `cmd/web/main.go`:
+
+```go
+tradeStore := postgres.NewTradeStore(db)
+
+// Регистрируем с зависимостью
+engine.RegisterComponent("trading:live", trading.NewLiveTradingFactory(tradeStore))
+engine.RegisterComponent("trading:paper", trading.NewPaperTradingFactory(tradeStore))
+```
+
+✅ Тестируемо  
+✅ Гибко  
+✅ Идеоматично
+
+---
+
+## 8. 🌐 Доступ к данным в веб-интерфейсе (`templ`)
+
+Теперь ты можешь:
+
+### 1. Реализовать API-эндпоинт:
+
+```go
+// internal/api/handlers/trade_handler.go
+func (h *TradeHandler) GetBySession(w http.ResponseWriter, r *http.Request) {
+    sessionID := r.URL.Query().Get("session_id")
+    trades, _ := h.tradeStore.GetTradesBySession(sessionID)
+    json.NewEncoder(w).Encode(trades)
+}
+```
+
+### 2. Или использовать напрямую в `templ`-обработчике:
+
+```go
+// internal/web/handlers/dashboard.go
+func Dashboard(w http.ResponseWriter, r *http.Request) {
+    sessionID := "..."
+    trades, _ := tradeStore.GetTradesBySession(sessionID)
+
+    views.DashboardPage(trades).Render(r.Context(), w)
+}
+```
+
+### 3. В `templ` шаблоне:
+
+```templ
+// internal/web/views/dashboard.templ
+templ DashboardPage(trades []types.Trade) {
+  <h2>Trade History</h2>
+  <table>
+    <tr>
+      <th>Symbol</th>
+      <th>Side</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>Status</th>
+    </tr>
+    { range _, trade := trades }
+    <tr class={ if trade.Status == "failed" }"error"{ end }>
+      <td>{ trade.Symbol }</td>
+      <td>{ trade.Side }</td>
+      <td>{ trade.Quantity }</td>
+      <td>{ trade.Price }</td>
+      <td>{ trade.Status }</td>
+    </tr>
+    { end }
+  </table>
+}
+```
+
+---
+
+## ✅ Итог
+
+Ты реализовал:
+
+1. **Таблицу `trades`** — для хранения сделок.
+2. **Интерфейс `TradeStore`** — для инъекции зависимости.
+3. **Интеграцию с `trading` компонентом** — он сохраняет сделки при исполнении.
+4. **Передачу `tradeStore` через фабрику** — без глобальных состояний.
+5. **Доступ к данным в `templ`** — для отображения истории.
+
+---
+
+## ✅ Преимущества
+
+| Фича | Реализация |
+|------|-----------|
+| Наблюдаемость | Веб-интерфейс видит все сделки |
+| Воспроизводимость | Можно сравнивать бектест и live |
+| Тестируемость | Можно мокать `TradeStore` |
+| Безопасность | Ошибка БД не ломает торговлю |
+
+---
+
+Если хочешь — могу показать, как сделать **мок `TradeStore` для тестов** или добавить **агрегацию по дням** в веб-интерфейсе.
+
+### USER
+почему структура записи хранилища описывается в pkg/types, а не в internal/models ?
+
+### ASSISTANT
+Отличный вопрос! Он касается важного архитектурного решения: **где размещать структуры данных, связанные с хранилищем (БД)** — в `pkg/types` или в `internal/models`.
+
+Давай разберёмся, **почему `Trade` может быть в `pkg/types`**, и когда лучше использовать `internal/models`.
+
+---
+
+## ✅ Короткий ответ
+
+> **`Trade` в `pkg/types` уместен, если он используется как *общий DTO (Data Transfer Object)* между слоями: ботом, API, веб-интерфейсом (`templ`), и хранилищем.**  
+> А `internal/models` — если структура **специфична для БД и не должна выходить за пределы `storage`**.
+
+---
+
+## 🧱 Подробное объяснение
+
+### 1. **Чем является `Trade` в твоём случае?**
+
+Ты хочешь:
+- Сохранять сделки в БД.
+- Показывать их в веб-интерфейсе (`templ`).
+- Возможно, возвращать через API.
+
+👉 Это означает: `Trade` — **не просто модель БД**, а **объект данных, который передаётся между слоями**:
+- `trading` (создаёт)
+- `storage` (сохраняет)
+- `api` (отдаёт как JSON)
+- `web` (рендерит через `templ`)
+
+> Такой объект — **DTO (Data Transfer Object)**, и он **должен быть доступен во многих пакетах**.
+
+---
+
+### 2. Почему `pkg/types` — хорошее место для DTO
+
+| Причина | Объяснение |
+|--------|-----------|
+| ✅ **Общая область видимости** | `pkg/types` предназначен для типов, используемых в нескольких модулях |
+| ✅ **Независимость от реализации** | `Trade` не зависит от `sqlx`, `gorm`, или структуры таблицы |
+| ✅ **Поддержка `templ`** | `templ`-шаблоны могут напрямую использовать `pkg/types.Trade` |
+| ✅ **API-совместимость** | `api/handlers` возвращает `[]types.Trade` — чистый JSON |
+
+```go
+// templ может использовать types.Trade напрямую
+templ TradeRow(trade types.Trade) {
+  <tr>
+    <td>{ trade.Symbol }</td>
+    <td>{ trade.Price }</td>
+  </tr>
+}
+```
+
+---
+
+### 3. Когда использовать `internal/models`?
+
+Используй `internal/models` (например, `internal/storage/models/trade.go`), если:
+
+| Сценарий | Пример |
+|--------|--------|
+| 🔸 Модель БД отличается от DTO | В БД — `trade_status`, в API — `status` |
+| 🔸 Используются теги ORM | `db:"trade_status"`, `gorm:"index"` |
+| 🔸 Есть вычисляемые поля БД | `jsonb`-колонки, вложенные структуры |
+| 🔸 Не хочешь "засорять" публичные типы | Модель используется только в `storage` |
+
+#### Пример:
+```go
+// internal/storage/models/trade.go
+type DBTrade struct {
+    ID         string    `db:"id"`
+    SessionID  string    `db:"session_id"`
+    TradeStatus string   `db:"trade_status"` // не совпадает с DTO
+    RawDetails []byte    `db:"raw_details"`  // JSONB
+}
+```
+
+А в `pkg/types/trade.go` — "чистый" DTO:
+```go
+type Trade struct {
+    ID        string    `json:"id"`
+    SessionID string    `json:"session_id"`
+    Status    string    `json:"status"`
+    Details   json.RawMessage `json:"details,omitempty"`
+}
+```
+
+И конвертируй в `storage`:
+```go
+func (s *TradeStore) toDTO(db *DBTrade) *types.Trade { ... }
+```
+
+---
+
+## ✅ Рекомендация: выбери подход в зависимости от сложности
+
+| Уровень сложности | Решение |
+|------------------|--------|
+| 🟢 **Простой проект** (мало полей, нет различий) | Храни `Trade` в `pkg/types/trade.go` — проще и удобнее |
+| 🟡 **Средний/сложный** (разные поля, ORM, безопасность) | Раздели: `internal/storage/models/trade.go` + `pkg/types/trade.go` |
+| 🔴 **Микросервисы / API-first** | `pkg/types` — только для JSON-схем, `models` — внутри `storage` |
+
+---
+
+## 🔄 Пример: разделённая структура
+
+```
+pkg/types/trade.go        → для API, templ, trading
+internal/storage/models/trade.go → для БД
+internal/storage/postgres/trade.go → сохранение/чтение с маппингом
+```
+
+```go
+// pkg/types/trade.go
+type Trade struct {
+    ID        string    `json:"id"`
+    SessionID string    `json:"session_id"`
+    Symbol    string    `json:"symbol"`
+    Side      string    `json:"side"`
+    Price     float64   `json:"price"`
+    Status    string    `json:"status"`
+}
+```
+
+```go
+// internal/storage/models/trade.go
+type DBTrade struct {
+    ID          string    `db:"id"`
+    SessionUUID string    `db:"session_id"`
+    Ticker      string    `db:"ticker_symbol"`
+    Side        string    `db:"trade_side"`
+    Price       float64   `db:"exec_price"`
+    Status      string    `db:"status_code"`
+}
+```
+
+```go
+// internal/storage/postgres/trade.go
+func (s *TradeStore) SaveTrade(t *types.Trade) error {
+    dbTrade := &DBTrade{
+        ID:          t.ID,
+        SessionUUID: t.SessionID,
+        Ticker:      t.Symbol,
+        Side:        t.Side,
+        Price:       t.Price,
+        Status:      t.Status,
+    }
+    // INSERT INTO trades ...
+}
+```
+
+---
+
+## ✅ Вывод
+
+> **`Trade` в `pkg/types` — нормально, если:**
+> - Это DTO, используемый в `templ`, `API`, `trading`.
+> - Нет различий между внешним и внутренним представлением.
+> - Проект не слишком сложный.
+
+> **Перенеси в `internal/models`, если:**
+> - Нужно изолировать детали БД.
+> - Есть различия в полях, тегах, безопасности.
+> - Планируешь миграцию БД или ORM.
+
+---
+
+Ты на правильном пути: `templ` отлично работает с `pkg/types`, и хранение `Trade` там — **идиоматично для небольших и средних проектов**.
+
+### USER
+можно ли в структурах pkg/types использовать теги db ?
+
+### ASSISTANT
+**Нет, не рекомендуется** использовать теги `db:"..."` в структурах внутри `pkg/types`.
+
+Вот почему — и что делать вместо этого.
+
+---
+
+## ❌ Почему **нельзя (или не стоит)** использовать `db`-теги в `pkg/types`
+
+Пакет `pkg/types` предназначен для **общих, чистых типов-данных (DTO)**, которые используются во многих слоях приложения:
+
+- `internal/bot`
+- `internal/api`
+- `internal/web` (включая `templ`)
+- CLI, тесты, внешние интеграции
+
+Когда ты добавляешь теги вроде:
+
+```go
+type Trade struct {
+    ID        string `json:"id" db:"id"`
+    SessionID string `json:"session_id" db:"session_id"`
+    Price     float64 `json:"price" db:"exec_price"`
+}
+```
+
+— ты **привязываешь бизнес-объект к деталям реализации хранилища**, что нарушает принципы:
+
+| Принцип | Нарушение |
+|--------|----------|
+| **Разделение ответственности** | `types.Trade` становится зависимым от структуры БД |
+| **Гибкость** | Нельзя изменить имя колонки в БД без изменения DTO |
+| **Тестируемость** | Моки и тестовые данные "загрязнены" деталями БД |
+| **Повторное использование** | Если кто-то использует `Trade` вне контекста БД — зачем ему `db`-теги? |
+
+---
+
+## ✅ Правильный подход: разделить модели
+
+### ✅ Решение: два слоя
+
+| Пакет | Назначение | Пример |
+|------|-----------|--------|
+| `pkg/types/` | **DTO для передачи данных** между слоями | `types.Trade` — для `templ`, API, компонентов |
+| `internal/storage/models/` | **Модели БД** с тегами `db`, `json`, `gorm` и т.п. | `models/db_trade.go` — только для `storage` |
+
+---
+
+### Пример
+
+#### 1. `pkg/types/trade.go` — чистый DTO
+
+```go
+package types
+
+type Trade struct {
+    ID        string  `json:"id"`
+    SessionID string  `json:"session_id"`
+    Symbol    string  `json:"symbol"`
+    Side      string  `json:"side"`
+    Quantity  float64 `json:"quantity"`
+    Price     float64 `json:"price"`
+    Status    string  `json:"status"`
+}
+```
+
+> 🔹 Используется в:
+> - `templ` шаблонах
+> - API (`/api/trades`)
+> - Компоненте `trading`
+> - Веб-страницах
+
+---
+
+#### 2. `internal/storage/models/trade.go` — модель БД
+
+```go
+package models
+
+type Trade struct {
+    ID          string  `db:"trade_id"`
+    SessionUUID string  `db:"session_id"`
+    Ticker      string  `db:"ticker_symbol"`
+    Side        string  `db:"side"`
+    Qty         float64 `db:"quantity"`
+    Price       float64 `db:"exec_price"`
+    StatusCode  string  `db:"status"`
+}
+```
+
+---
+
+#### 3. Конвертация в хранилище
+
+```go
+// internal/storage/postgres/trade.go
+func (s *TradeStore) toDB(trade *types.Trade) *models.Trade {
+    return &models.Trade{
+        ID:          trade.ID,
+        SessionUUID: trade.SessionID,
+        Ticker:      trade.Symbol,
+        Side:        trade.Side,
+        Qty:         trade.Quantity,
+        Price:       trade.Price,
+        StatusCode:  trade.Status,
+    }
+}
+
+func (s *TradeStore) toDTO(db *models.Trade) *types.Trade {
+    return &types.Trade{
+        ID:        db.ID,
+        SessionID: db.SessionUUID,
+        Symbol:    db.Ticker,
+        Side:      db.Side,
+        Quantity:  db.Qty,
+        Price:     db.Price,
+        Status:    db.StatusCode,
+    }
+}
+```
+
+---
+
+## 🎯 Преимущества такого подхода
+
+| Плюс | Как работает |
+|------|-------------|
+| **Изолированность** | Изменения в БД не ломают `templ` или API |
+| **Гибкость** | Можно использовать разные ORM, PostgreSQL → ClickHouse |
+| **Чистота DTO** | `pkg/types` остаётся независимым |
+| **Поддержка `templ`** | `templ` работает с понятными, чистыми структурами |
+| **Безопасность** | Можно фильтровать поля при конвертации (например, скрыть `raw_order_data`) |
+
+---
+
+## ✅ Итог
+
+> ❌ **Не используй `db:"..."` теги в `pkg/types`** — это нарушает архитектуру.
+
+> ✅ **Используй отдельные модели в `internal/storage/models`** для БД, а `pkg/types` — только для **передачи данных между слоями**.
+
+Такой подход:
+- Поддерживает чистую архитектуру.
+- Совместим с `templ` (он работает с `types.Trade`).
+- Готов к масштабированию.
+
+Если проект маленький — можно временно обойтись одним типом, но **лучше сразу делать правильно**.

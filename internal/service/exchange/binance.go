@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,7 +26,7 @@ func NewBinance(apiKey, apiSecret string, logger *logger.Logger) *Binance {
 }
 
 // GetMarketData получает рыночные данные с Binance.
-func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
+func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (marketData []*types.MarketData, lastTime time.Time, err error) {
 
 	//https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints#klinecandlestick-data
 
@@ -69,7 +69,7 @@ func (b *Binance) GetMarketData(symbol, interval string, startTime time.Time) (m
 		// Преобразуем из UTC в локальное время
 		lastTime = time.UnixMilli(closeTime).In(irkutskLocation)
 
-		marketData = append(marketData, &models.MarketData{
+		marketData = append(marketData, &types.MarketData{
 			Symbol:     symbol,
 			OpenPrice:  openPrice,
 			HightPrice: hightPrice,

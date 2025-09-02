@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto-trading-bot/internal/components/sources"
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
-	"crypto-trading-bot/internal/service/marketdata/sources"
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
 	"crypto-trading-bot/internal/trading/trader"

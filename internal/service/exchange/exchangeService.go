@@ -3,12 +3,12 @@ package exchange
 import (
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"time"
 )
 
 type ExchangeService interface {
-	LoadData(exchange Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error)
+	LoadData(exchange Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*types.MarketData, lastTime time.Time, err error)
 }
 
 type exchangeService struct {
@@ -26,7 +26,7 @@ func NewEchangeService(repo *repositories.Repository, logger *logger.Logger, exc
 }
 
 // Загружает данные с указанной бирже по указанной паре и интервалу
-func (s *exchangeService) LoadData(exchange Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*models.MarketData, lastTime time.Time, err error) {
+func (s *exchangeService) LoadData(exchange Exchange, symbol string, timeFrame string, startTime time.Time) (marketData []*types.MarketData, lastTime time.Time, err error) {
 
 	s.logger.Infof("Fetching data from exchange: %s %s %v", exchange.GetName(), symbol, startTime)
 

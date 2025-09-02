@@ -1,8 +1,8 @@
 package dispatcher
 
 import (
-	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/series"
+	"crypto-trading-bot/pkg/types"
 	"testing"
 	"time"
 
@@ -11,7 +11,7 @@ import (
 
 func Test_VolumeTrendRule_Buy(t *testing.T) {
 
-	marketData := []models.MarketData{
+	marketData := []types.MarketData{
 		{Timestamp: time.Now(), ClosePrice: 30000, BuyVolume: 100, SellVolume: 50},
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 30100, BuyVolume: 200, SellVolume: 70},
 	}
@@ -30,7 +30,7 @@ func Test_VolumeTrendRule_Buy(t *testing.T) {
 }
 
 func Test_VolumeTrendRule_Sell(t *testing.T) {
-	marketData := []models.MarketData{
+	marketData := []types.MarketData{
 		{Timestamp: time.Now(), ClosePrice: 30000, BuyVolume: 100, SellVolume: 50},
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 29900, BuyVolume: 80, SellVolume: 200},
 	}
@@ -49,7 +49,7 @@ func Test_VolumeTrendRule_Sell(t *testing.T) {
 }
 
 func Test_VolumeTrendRule_Hold_NoSignificantChange(t *testing.T) {
-	marketData := []models.MarketData{
+	marketData := []types.MarketData{
 		{Timestamp: time.Now(), ClosePrice: 30000, BuyVolume: 100, SellVolume: 50},
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 30050, BuyVolume: 110, SellVolume: 55},
 	}

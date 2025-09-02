@@ -1,13 +1,13 @@
 package app
 
 import (
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"time"
 )
 
 // MarketDataLoadedEvent представляет событие загрузки рыночных данных
 type MarketDataLoadedEvent struct {
-	MarketData []*models.MarketData
+	MarketData []*types.MarketData
 }
 
 // Type возвращает тип события

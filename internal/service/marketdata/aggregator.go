@@ -1,24 +1,24 @@
 package marketdata
 
 import (
-	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/clusters"
+	"crypto-trading-bot/pkg/types"
 )
 
 // Сгруппировать торговые данные по количеству в блоке
 type Aggregator struct {
 	BlockSize int
-	block     []*models.MarketData
+	block     []*types.MarketData
 }
 
 func NewAggregator(blockSize int) *Aggregator {
 	return &Aggregator{
 		BlockSize: blockSize,
-		block:     make([]*models.MarketData, 0),
+		block:     make([]*types.MarketData, 0),
 	}
 }
 
-func (a *Aggregator) Add(data *models.MarketData) {
+func (a *Aggregator) Add(data *types.MarketData) {
 	if len(a.block) == a.BlockSize {
 		a.block = a.block[:0] // Очищаем блок
 	}
@@ -33,7 +33,7 @@ func (a *Aggregator) IsReady() bool {
 	}
 }
 
-func (a *Aggregator) GetAggregatedData() []*models.MarketData {
+func (a *Aggregator) GetAggregatedData() []*types.MarketData {
 	if len(a.block) == a.BlockSize {
 		return a.block
 	} else {
@@ -41,7 +41,7 @@ func (a *Aggregator) GetAggregatedData() []*models.MarketData {
 	}
 }
 
-func (a *Aggregator) GetClusteredData(NumClusters int, setTimeframe string) []*models.MarketData {
+func (a *Aggregator) GetClusteredData(NumClusters int, setTimeframe string) []*types.MarketData {
 	if len(a.block) != a.BlockSize {
 		return nil
 	}

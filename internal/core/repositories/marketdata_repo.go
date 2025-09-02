@@ -2,23 +2,23 @@ package repositories
 
 import (
 	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"database/sql"
 	"fmt"
 	"time"
 )
 
 type MarketDataRepository interface {
-	SaveMarketData(data []*models.MarketData) error
-	GetMarketData(symbol string, limit int) ([]*models.MarketData, error)
-	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error)
+	SaveMarketData(data []*types.MarketData) error
+	GetMarketData(symbol string, limit int) ([]*types.MarketData, error)
+	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*types.MarketData, error)
 
 	// SaveClusterData(data []*models.ClusterData) error
 	// GetClusterData(symbol string, limit int) ([]*models.ClusterData, error)
 
-	GetMarketDataStatus(id int) (*models.MarketDataStatus, error)
-	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
-	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
+	GetMarketDataStatus(id int) (*types.MarketDataStatus, error)
+	SaveMarketDataStatus(marketdatastatus *types.MarketDataStatus) error
+	GetMarketDataStatusList() ([]*types.MarketDataStatus, error)
 }
 
 type marketDataRepository struct {
@@ -31,7 +31,7 @@ func NewMarketDataRepository(db *DB, logger *logger.Logger) MarketDataRepository
 }
 
 // SaveMarketData сохраняет рыночные данные в базу данных.
-func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
+func (r *marketDataRepository) SaveMarketData(data []*types.MarketData) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		r.logger.Errorf("Failed to begin transaction: %v", err)
@@ -98,7 +98,7 @@ func (r *marketDataRepository) SaveMarketData(data []*models.MarketData) error {
 // 	return nil
 // }
 
-func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*models.MarketData, error) {
+func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*types.MarketData, error) {
 	query := `
         SELECT exchange, symbol, open_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp
         FROM market_data
@@ -107,7 +107,7 @@ func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*model
         LIMIT $2;
     `
 
-	var marketData []*models.MarketData
+	var marketData []*types.MarketData
 	err := r.db.Select(&marketData, query, symbol, limit)
 	if err != nil {
 		r.logger.Errorf("Ошибка получения market_data: %v", err)
@@ -118,7 +118,7 @@ func (r *marketDataRepository) GetMarketData(symbol string, limit int) ([]*model
 	return marketData, nil
 }
 
-func (r *marketDataRepository) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error) {
+func (r *marketDataRepository) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*types.MarketData, error) {
 	query := `
         SELECT exchange, symbol, open_price, hight_price, low_price, close_price, volume, buy_volume, sell_volume, time_frame, timestamp
         FROM market_data
@@ -126,7 +126,7 @@ func (r *marketDataRepository) GetMarketDataPeriod(symbol string, interval strin
         ORDER BY timestamp ASC;
     `
 
-	var marketData []*models.MarketData
+	var marketData []*types.MarketData
 	err := r.db.Select(&marketData, query, symbol, interval, start, end)
 	if err != nil {
 		r.logger.Errorf("Ошибка получения market_data: %v", err)
@@ -163,8 +163,8 @@ func (r *marketDataRepository) GetMarketDataPeriod(symbol string, interval strin
 // }
 
 // GetMarketDataStatus находит marketdatastatus по ID.
-func (r *marketDataRepository) GetMarketDataStatus(id int) (*models.MarketDataStatus, error) {
-	var marketdatastatus models.MarketDataStatus
+func (r *marketDataRepository) GetMarketDataStatus(id int) (*types.MarketDataStatus, error) {
+	var marketdatastatus types.MarketDataStatus
 	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss WHERE id = $1"
 
 	err := r.db.Get(&marketdatastatus, query, id)
@@ -180,7 +180,7 @@ func (r *marketDataRepository) GetMarketDataStatus(id int) (*models.MarketDataSt
 }
 
 // SaveMarketDataStatus сохраняет marketdatastatus в базу данных.
-func (r *marketDataRepository) SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error {
+func (r *marketDataRepository) SaveMarketDataStatus(marketdatastatus *types.MarketDataStatus) error {
 	query := "INSERT INTO market_data_statuss (exchange, symbol, time_frame, active, actual_time, status) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (exchange,symbol,time_frame) DO UPDATE SET active = $4, actual_time = $5, status = $6;"
 	_, err := r.db.Exec(query,
 		marketdatastatus.Exchange,
@@ -198,8 +198,8 @@ func (r *marketDataRepository) SaveMarketDataStatus(marketdatastatus *models.Mar
 }
 
 // GetMarketDataStatusList выбирает список marketdatastatus из базы данных.
-func (r *marketDataRepository) GetMarketDataStatusList() ([]*models.MarketDataStatus, error) {
-	var marketdatastatus []*models.MarketDataStatus
+func (r *marketDataRepository) GetMarketDataStatusList() ([]*types.MarketDataStatus, error) {
+	var marketdatastatus []*types.MarketDataStatus
 	query := "SELECT id, exchange, symbol, time_frame, active, actual_time, status FROM market_data_statuss"
 
 	err := r.db.Select(&marketdatastatus, query)

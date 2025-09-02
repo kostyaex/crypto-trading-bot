@@ -1,4 +1,4 @@
-package models
+package types
 
 type ClusterSettings struct {
 	NumClusters int    `mapstructure:"num_clusters"`

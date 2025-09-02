@@ -2,31 +2,31 @@ package sources
 
 import (
 	"context"
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 )
 
 // Источник данных (база данных или загруженные с биржи данные)
 type MarketDataSource interface {
-	GetMarketDataCh() <-chan *models.MarketData
+	GetMarketDataCh() <-chan *types.MarketData
 	Close()
 }
 
 // ---------------------------------------------------------------------------
 // источник исторических данных из БД
 type HistoricalSource struct {
-	data []*models.MarketData
+	data []*types.MarketData
 	ctx  context.Context
 }
 
-func NewHistoricalSource(data []*models.MarketData, ctx context.Context) *HistoricalSource {
+func NewHistoricalSource(data []*types.MarketData, ctx context.Context) *HistoricalSource {
 	return &HistoricalSource{
 		data: data,
 		ctx:  ctx,
 	}
 }
 
-func (h *HistoricalSource) GetMarketDataCh() <-chan *models.MarketData {
-	ch := make(chan *models.MarketData)
+func (h *HistoricalSource) GetMarketDataCh() <-chan *types.MarketData {
+	ch := make(chan *types.MarketData)
 	go func() {
 		defer close(ch)
 
@@ -58,7 +58,7 @@ func (h *HistoricalSource) Close() {}
 // 	return &LiveMarketSource{wsClient: client}
 // }
 
-// func (l *LiveMarketSource) GetMarketDataCh() <-chan *models.MarketData {
+// func (l *LiveMarketSource) GetMarketDataCh() <-chan *types.MarketData {
 // 	return l.wsClient.SubscribeToTrades()
 // }
 

@@ -1,15 +1,15 @@
 package dispatcher
 
 import (
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"fmt"
 )
 
 const (
-	SignalBuy  models.SignalType = "buy"
-	SignalSell models.SignalType = "sell"
-	SignalHold models.SignalType = "hold"
+	SignalBuy  types.SignalType = "buy"
+	SignalSell types.SignalType = "sell"
+	SignalHold types.SignalType = "hold"
 )
 
 var (
@@ -24,7 +24,7 @@ func init() {
 }
 
 func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
-	var config models.DispatcherSettings
+	var config types.DispatcherSettings
 
 	if err := json.Unmarshal(jsonData, &config); err != nil {
 		return nil, err

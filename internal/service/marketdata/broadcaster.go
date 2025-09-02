@@ -1,27 +1,27 @@
 package marketdata
 
 import (
-	"crypto-trading-bot/internal/models"
+	"crypto-trading-bot/pkg/types"
 	"sync"
 )
 
 // Мультикастер для распределения потока торговых данных по сгрупированным стратегиям.
 
 type Broadcaster struct {
-	subscribers []chan *models.MarketData
-	source      <-chan *models.MarketData
+	subscribers []chan *types.MarketData
+	source      <-chan *types.MarketData
 	wg          sync.WaitGroup
 }
 
-func NewBroadcaster(source <-chan *models.MarketData) *Broadcaster {
+func NewBroadcaster(source <-chan *types.MarketData) *Broadcaster {
 	return &Broadcaster{
-		subscribers: make([]chan *models.MarketData, 0),
+		subscribers: make([]chan *types.MarketData, 0),
 		source:      source,
 	}
 }
 
-func (b *Broadcaster) Subscribe() <-chan *models.MarketData {
-	ch := make(chan *models.MarketData, 100)
+func (b *Broadcaster) Subscribe() <-chan *types.MarketData {
+	ch := make(chan *types.MarketData, 100)
 	b.subscribers = append(b.subscribers, ch)
 	return ch
 }

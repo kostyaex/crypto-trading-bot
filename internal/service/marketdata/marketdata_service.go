@@ -5,8 +5,8 @@ import (
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
-	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/exchange"
+	"crypto-trading-bot/pkg/types"
 	"fmt"
 	"strings"
 	"sync"
@@ -14,13 +14,13 @@ import (
 )
 
 type MarketDataService interface {
-	SaveMarketData(data []*models.MarketData) error
-	GetMarketData(symbol string, limit int) ([]*models.MarketData, error)
-	GetMarketDataStatus(id int) (*models.MarketDataStatus, error)
-	SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error
-	GetMarketDataStatusList() ([]*models.MarketDataStatus, error)
+	SaveMarketData(data []*types.MarketData) error
+	GetMarketData(symbol string, limit int) ([]*types.MarketData, error)
+	GetMarketDataStatus(id int) (*types.MarketDataStatus, error)
+	SaveMarketDataStatus(marketdatastatus *types.MarketDataStatus) error
+	GetMarketDataStatusList() ([]*types.MarketDataStatus, error)
 	RunSchudeler(ctx context.Context)
-	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error)
+	GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*types.MarketData, error)
 }
 
 type marketDataService struct {
@@ -139,7 +139,7 @@ func (s *marketDataService) LoadData() {
 }
 
 // SaveMarketData сохраняет рыночные данные.
-func (s *marketDataService) SaveMarketData(data []*models.MarketData) error {
+func (s *marketDataService) SaveMarketData(data []*types.MarketData) error {
 	if err := s.repo.MarketData.SaveMarketData(data); err != nil {
 		s.logger.Errorf("Failed to save market data: %v", err)
 		return err
@@ -147,12 +147,12 @@ func (s *marketDataService) SaveMarketData(data []*models.MarketData) error {
 	return nil
 }
 
-func (s *marketDataService) GetMarketData(symbol string, limit int) ([]*models.MarketData, error) {
+func (s *marketDataService) GetMarketData(symbol string, limit int) ([]*types.MarketData, error) {
 	return s.repo.MarketData.GetMarketData(symbol, limit)
 }
 
 // GetMarketDataStatus получает информацию о marketdatastatus по ID.
-func (s *marketDataService) GetMarketDataStatus(id int) (*models.MarketDataStatus, error) {
+func (s *marketDataService) GetMarketDataStatus(id int) (*types.MarketDataStatus, error) {
 	marketdatastatus, err := s.repo.MarketData.GetMarketDataStatus(id)
 	if err != nil {
 		s.logger.Errorf("Failed to get marketdatastatus: %v", err)
@@ -162,7 +162,7 @@ func (s *marketDataService) GetMarketDataStatus(id int) (*models.MarketDataStatu
 }
 
 // SaveMarketDataStatus сохраняет информацию о marketdatastatus.
-func (s *marketDataService) SaveMarketDataStatus(marketdatastatus *models.MarketDataStatus) error {
+func (s *marketDataService) SaveMarketDataStatus(marketdatastatus *types.MarketDataStatus) error {
 	if err := s.repo.MarketData.SaveMarketDataStatus(marketdatastatus); err != nil {
 		s.logger.Errorf("Failed to save marketdatastatus: %v", err)
 		return err
@@ -171,7 +171,7 @@ func (s *marketDataService) SaveMarketDataStatus(marketdatastatus *models.Market
 }
 
 // GetMarketDataStatus получает список marketdatastatus.
-func (s *marketDataService) GetMarketDataStatusList() ([]*models.MarketDataStatus, error) {
+func (s *marketDataService) GetMarketDataStatusList() ([]*types.MarketDataStatus, error) {
 	marketdatastatus, err := s.repo.MarketData.GetMarketDataStatusList()
 	if err != nil {
 		s.logger.Errorf("Failed to get marketdatastatus list: %v", err)
@@ -180,6 +180,6 @@ func (s *marketDataService) GetMarketDataStatusList() ([]*models.MarketDataStatu
 	return marketdatastatus, nil
 }
 
-func (s *marketDataService) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*models.MarketData, error) {
+func (s *marketDataService) GetMarketDataPeriod(symbol string, interval string, start time.Time, end time.Time) ([]*types.MarketData, error) {
 	return s.repo.MarketData.GetMarketDataPeriod(symbol, interval, start, end)
 }
