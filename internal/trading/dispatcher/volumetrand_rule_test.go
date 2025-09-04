@@ -1,7 +1,6 @@
 package dispatcher
 
 import (
-	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/pkg/types"
 	"testing"
 	"time"
@@ -16,9 +15,9 @@ func Test_VolumeTrendRule_Buy(t *testing.T) {
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 30100, BuyVolume: 200, SellVolume: 70},
 	}
 
-	seriesItem := series.Series{}
+	seriesItem := types.Series{}
 	for _, md := range marketData {
-		seriesItem.Points = append(seriesItem.Points, series.Point{MarketData: &md})
+		seriesItem.Points = append(seriesItem.Points, types.Point{MarketData: &md})
 	}
 
 	rule := &VolumeTrendRule{MinVolumeChangePercent: 10}
@@ -35,9 +34,9 @@ func Test_VolumeTrendRule_Sell(t *testing.T) {
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 29900, BuyVolume: 80, SellVolume: 200},
 	}
 
-	seriesItem := series.Series{}
+	seriesItem := types.Series{}
 	for _, md := range marketData {
-		seriesItem.Points = append(seriesItem.Points, series.Point{MarketData: &md})
+		seriesItem.Points = append(seriesItem.Points, types.Point{MarketData: &md})
 	}
 
 	rule := &VolumeTrendRule{MinVolumeChangePercent: 10}
@@ -54,9 +53,9 @@ func Test_VolumeTrendRule_Hold_NoSignificantChange(t *testing.T) {
 		{Timestamp: time.Now().Add(time.Minute), ClosePrice: 30050, BuyVolume: 110, SellVolume: 55},
 	}
 
-	seriesItem := series.Series{}
+	seriesItem := types.Series{}
 	for _, md := range marketData {
-		seriesItem.Points = append(seriesItem.Points, series.Point{MarketData: &md})
+		seriesItem.Points = append(seriesItem.Points, types.Point{MarketData: &md})
 	}
 
 	rule := &VolumeTrendRule{MinVolumeChangePercent: 20}

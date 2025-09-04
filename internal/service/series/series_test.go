@@ -1,6 +1,7 @@
 package series
 
 import (
+	"crypto-trading-bot/pkg/types"
 	"fmt"
 	"testing"
 	"time"
@@ -21,13 +22,13 @@ func TestNewSeriesBuilder(t *testing.T) {
 		panic(err)
 	}
 
-	var series []*Series
+	var series []*types.Series
 
 	now := time.Now()
 
 	// Итерация 1
 	// Два значения с одинаковым временем, не должны попасть в одну серию
-	points1 := []Point{
+	points1 := []types.Point{
 		{Value: 100.0, Weight: 2.5, Time: now},
 		{Value: 101.0, Weight: 3.0, Time: now},
 		{Value: 110.0, Weight: 2.0, Time: now},
@@ -35,7 +36,7 @@ func TestNewSeriesBuilder(t *testing.T) {
 	series = builder.algorithm.AddPoints(series, points1)
 
 	// Итерация 2
-	points2 := []Point{
+	points2 := []types.Point{
 		{Value: 102.0, Weight: 4.0, Time: now.Add(2 * time.Second)},
 		{Value: 200.0, Weight: 1.0, Time: now.Add(2 * time.Second)},
 	}

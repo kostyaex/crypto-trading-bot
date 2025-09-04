@@ -1,6 +1,7 @@
 package series
 
 import (
+	"crypto-trading-bot/pkg/types"
 	"fmt"
 	"math"
 	"time"
@@ -17,7 +18,7 @@ type SeriesMetrics struct {
 	StartTime, EndTime time.Time // Самая ранняя и поздняя точки
 }
 
-func CollectMetrics(series []*Series) SeriesMetrics {
+func CollectMetrics(series []*types.Series) SeriesMetrics {
 	var m SeriesMetrics
 	m.TotalSeries = len(series)
 

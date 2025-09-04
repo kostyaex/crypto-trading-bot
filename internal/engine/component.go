@@ -10,6 +10,7 @@ type Component struct {
 	Runnable         types.Runnable         `json:"-"`
 	Processor        types.Processor        `json:"-"`
 	MarketDataSource types.MarketDataSource `json:"-"`
+	Dispatcher       types.Dispatcher       `json:"-"`
 }
 
 // ComponentFactory — функция, создающая компонент

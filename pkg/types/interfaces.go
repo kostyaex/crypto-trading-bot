@@ -16,6 +16,10 @@ type MarketDataSource interface {
 	Run(ctx context.Context, output chan<- *MarketData) error
 }
 
+type Dispatcher interface {
+	Dispatch(ctx context.Context, series *Series)
+}
+
 // type SignalGenerator interface {
 // 	Run(ctx context.Context, input <-chan *Candle, output chan<- *Signal) error
 // }

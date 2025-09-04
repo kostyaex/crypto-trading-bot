@@ -14,7 +14,7 @@ type Strategy struct {
 	Description string          `db:"description"`
 	Config      json.RawMessage `db:"config"`
 	Active      bool            `db:"active"`
-	Settings    types.StrategySettings
+	Settings    types.StrategyConfig
 }
 
 // NewStrategy создает новую торговую стратегию
@@ -41,7 +41,7 @@ func (s *Strategy) UpdateSettingsFromConf() error {
 		return err
 	}
 
-	var settings types.StrategySettings
+	var settings types.StrategyConfig
 	err := mapstructure.Decode(config, &settings)
 	if err != nil {
 		return err

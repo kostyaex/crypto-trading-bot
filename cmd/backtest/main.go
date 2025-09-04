@@ -6,12 +6,14 @@ import (
 	"crypto-trading-bot/internal/core/config"
 	"crypto-trading-bot/internal/core/logger"
 	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/engine"
 	"crypto-trading-bot/internal/models"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
 	"crypto-trading-bot/internal/trading/trader"
+	"crypto-trading-bot/pkg/types"
 	"encoding/json"
 	"log"
 	"os"
@@ -146,7 +148,9 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	// )
 	// disp.Register(dispatcher.SignalBuy, &dispatcher.LoggerHandler{})
 	// disp.Register(dispatcher.SignalSell, &dispatcher.LoggerHandler{})
-	dispatcherCondig := `{
+
+	// Построение компоненты из конфига JSON:
+	dispatcherConfigJSON := `{
   "rules": [
     {
       "type": "volume_trand",
@@ -171,11 +175,24 @@ func run(ctx context.Context, cancel context.CancelFunc) {
     "hold": []
   }
 }`
-	disp, err := dispatcher.NewDispatcherFromJSON([]byte(dispatcherCondig))
+
+	componentType := "dispatcher"
+	engine.RegisterComponent(componentType, dispatcher.NewDispatcherFactory())
+
+	//disp, err := dispatcher.NewDispatcherFromJSON([]byte(dispatcherCondig))
+	dispatcherConfig, err := types.DeserializeConfig(componentType, []byte(dispatcherConfigJSON))
 	if err != nil {
-		basicServices.logger.Errorf("Ошибка формирования диспетчера %v", err)
+		basicServices.logger.Errorf("Ошибка разбора конфигурации диспетчера: %v", err)
 		return
 	}
+
+	dispatcherComponent, err := engine.New(componentType, dispatcherConfig, log.Default())
+	if err != nil {
+		basicServices.logger.Errorf("Ошибка создания компоненты диспетчера: %v", err)
+		return
+	}
+
+	// ---------------------------------------------------------------------
 
 	strategySettings := strategy.Settings
 
@@ -217,7 +234,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		DataSource:    source,
 		Strategy:      strategy,
 		SeriesBuilder: seriesBuilder,
-		Dispatcher:    disp,
+		Dispatcher:    dispatcherComponent.Dispatcher,
 	}
 
 	// ---------------------------------------------------------------------

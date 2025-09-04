@@ -1,5 +1,7 @@
 package series
 
+import "crypto-trading-bot/pkg/types"
+
 type AlgorithmType string
 
 const (
@@ -8,7 +10,7 @@ const (
 )
 
 type Algorithm interface {
-	AddPoints(activeSeries []*Series, newPoints []Point) []*Series
+	AddPoints(activeSeries []*types.Series, newPoints []types.Point) []*types.Series
 
 	// Возвращает имя алгоритма (для логирования)
 	Name() string

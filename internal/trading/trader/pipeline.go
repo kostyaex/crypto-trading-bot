@@ -9,6 +9,7 @@ import (
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/service/series"
 	"crypto-trading-bot/internal/trading/dispatcher"
+	"crypto-trading-bot/pkg/types"
 	"path/filepath"
 	"time"
 )
@@ -20,7 +21,7 @@ type Pipeline struct {
 	DataSource    sources.MarketDataSource
 	Strategy      models.Strategy
 	SeriesBuilder *series.SeriesBuilder
-	Dispatcher    *dispatcher.Dispatcher
+	Dispatcher    types.Dispatcher
 }
 
 // Обновить правила
@@ -94,7 +95,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 		// Этап 4. Обработка серий
 
 		for _, sr := range activeSeries {
-			p.Dispatcher.Dispatch(sr)
+			p.Dispatcher.Dispatch(context.Background(), sr)
 		}
 	}
 

@@ -1,7 +1,7 @@
 package dispatcher
 
 import (
-	"crypto-trading-bot/internal/service/series"
+	"context"
 	"crypto-trading-bot/pkg/types"
 	"time"
 )
@@ -14,12 +14,12 @@ type TradeSignal struct {
 	BuyVolume   float64
 	SellVolume  float64
 	Type        types.SignalType
-	Series      *series.Series
+	Series      *types.Series
 	Description string
 }
 
 type SignalRule interface {
-	Evaluate(series *series.Series) (TradeSignal, bool)
+	Evaluate(series *types.Series) (TradeSignal, bool)
 }
 
 type ActionHandler interface {
@@ -33,19 +33,12 @@ type Dispatcher struct {
 	handlers map[types.SignalType][]ActionHandler
 }
 
-func NewDispatcher(rules ...SignalRule) *Dispatcher {
-	return &Dispatcher{
-		rules:    rules,
-		handlers: make(map[types.SignalType][]ActionHandler),
-	}
-}
-
 // Регистрация обработчика
 func (d *Dispatcher) Register(signalType types.SignalType, handler ActionHandler) {
 	d.handlers[signalType] = append(d.handlers[signalType], handler)
 }
 
-func (d *Dispatcher) Dispatch(series *series.Series) {
+func (d *Dispatcher) Dispatch(ctx context.Context, series *types.Series) {
 
 	resultSignal := TradeSignal{Type: SignalHold}
 

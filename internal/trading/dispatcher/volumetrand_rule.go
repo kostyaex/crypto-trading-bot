@@ -1,7 +1,7 @@
 package dispatcher
 
 import (
-	"crypto-trading-bot/internal/service/series"
+	"crypto-trading-bot/pkg/types"
 	"fmt"
 )
 
@@ -9,7 +9,7 @@ type VolumeTrendRule struct {
 	MinVolumeChangePercent float64 // минимальный процент изменения объема
 }
 
-func (r *VolumeTrendRule) Evaluate(series *series.Series) (TradeSignal, bool) {
+func (r *VolumeTrendRule) Evaluate(series *types.Series) (TradeSignal, bool) {
 	if len(series.Points) < 2 {
 		return TradeSignal{Type: SignalHold}, false
 	}

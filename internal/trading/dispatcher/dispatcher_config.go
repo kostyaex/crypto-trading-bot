@@ -1,9 +1,10 @@
 package dispatcher
 
 import (
+	"crypto-trading-bot/internal/engine"
 	"crypto-trading-bot/pkg/types"
-	"encoding/json"
 	"fmt"
+	"log"
 )
 
 const (
@@ -23,12 +24,7 @@ func init() {
 	handlerRegistry["file"] = NewFileLoggerHandler
 }
 
-func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
-	var config types.DispatcherSettings
-
-	if err := json.Unmarshal(jsonData, &config); err != nil {
-		return nil, err
-	}
+func NewDispatcher(config *types.DispatcherConfig) (*Dispatcher, error) {
 
 	// Создаём правила
 	var rules []SignalRule
@@ -45,7 +41,10 @@ func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
 	}
 
 	// Создаём диспетчер
-	dispatcher := NewDispatcher(rules...)
+	dispatcher := &Dispatcher{
+		rules:    rules,
+		handlers: make(map[types.SignalType][]ActionHandler),
+	}
 
 	// Регистрируем обработчики
 	for signalType, handlers := range config.Handlers {
@@ -64,3 +63,53 @@ func NewDispatcherFromJSON(jsonData []byte) (*Dispatcher, error) {
 
 	return dispatcher, nil
 }
+
+// перенести в файл factory.go
+func NewDispatcherFactory() engine.ComponentFactory {
+	return func(config types.ComponentConfig, logger *log.Logger) (*engine.Component, error) {
+		typedConfig, ok := config.(*types.DispatcherConfig)
+		if !ok {
+			return nil, fmt.Errorf("invalid config type")
+		}
+
+		var comp engine.Component
+
+		dispatcher, err := NewDispatcher(typedConfig)
+
+		if err != nil {
+			return nil, fmt.Errorf("invalid config type")
+		}
+
+		comp.Dispatcher = dispatcher
+
+		return &comp, nil
+	}
+}
+
+// как выглядил пример в решении ИИ:
+// func NewTradingFactory(tradeStore storage.TradeStore) engine.ComponentFactory {
+// 	return func(config types.ComponentConfig, logger *log.Logger) (*engine.Component, error) {
+// 		typedConfig, ok := config.(*types.TradingConfig)
+// 		if !ok {
+// 			return nil, fmt.Errorf("invalid config type")
+// 		}
+
+// 		var comp engine.Component
+
+// 		switch typedConfig.Mode {
+// 		case "live":
+// 			executor := NewLiveExecutor(typedConfig, logger, tradeStore)
+// 			comp.Processor = executor
+// 		case "paper":
+// 			executor := NewPaperExecutor(typedConfig, logger, tradeStore)
+// 			comp.Processor = executor
+// 		case "backtest":
+// 			executor := NewBacktestExecutor(typedConfig, logger, tradeStore)
+// 			comp.Runnable = executor // может быть Runnable, если генерирует сигналы
+// 		default:
+// 			return nil, fmt.Errorf("unsupported mode: %s", typedConfig.Mode)
+// 		}
+
+// 		return &comp, nil
+// 	}
+// }

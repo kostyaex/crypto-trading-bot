@@ -1,6 +1,9 @@
 package series
 
-import "math"
+import (
+	"crypto-trading-bot/pkg/types"
+	"math"
+)
 
 type SimpleAlgorithm struct {
 	valueFactor float64
@@ -12,7 +15,7 @@ func (a *SimpleAlgorithm) Name() string {
 }
 
 // Формирование серий по сопоставлению последней точки серии с добавляемыми
-func (b *SimpleAlgorithm) AddPoints(activeSeries []*Series, newPoints []Point) []*Series {
+func (b *SimpleAlgorithm) AddPoints(activeSeries []*types.Series, newPoints []types.Point) []*types.Series {
 
 	// Точки с одинаковым временем, не должны попадать в одну серию
 
@@ -44,7 +47,7 @@ func (b *SimpleAlgorithm) AddPoints(activeSeries []*Series, newPoints []Point) [
 		if bestMatch != -1 && minScore < 1.0 {
 			activeSeries[bestMatch].Points = append(activeSeries[bestMatch].Points, pt)
 		} else {
-			activeSeries = append(activeSeries, &Series{Points: []Point{pt}})
+			activeSeries = append(activeSeries, &types.Series{Points: []types.Point{pt}})
 		}
 	}
 	return activeSeries

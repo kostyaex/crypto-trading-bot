@@ -9,7 +9,7 @@ import (
 
 type SeriesBuilder struct {
 	algorithm Algorithm
-	series    []*Series
+	series    []*types.Series
 	mutex     sync.RWMutex
 	timestamp time.Time // время обновления последних данных
 }
@@ -21,7 +21,7 @@ func NewSeriesBuilder(config map[string]interface{}) (*SeriesBuilder, error) {
 	}
 
 	builder := &SeriesBuilder{
-		series: make([]*Series, 0),
+		series: make([]*types.Series, 0),
 	}
 
 	switch AlgorithmType(builderType) {
@@ -46,9 +46,9 @@ func (builder *SeriesBuilder) AddClusteredData(newData []*types.MarketData) {
 	builder.mutex.Lock()
 	defer builder.mutex.Unlock()
 
-	var points []Point
+	var points []types.Point
 	for _, md := range newData {
-		point := Point{
+		point := types.Point{
 			Value:      md.ClusterPrice,
 			Weight:     md.Volume,
 			Time:       md.Timestamp,
@@ -62,16 +62,16 @@ func (builder *SeriesBuilder) AddClusteredData(newData []*types.MarketData) {
 }
 
 // возвращает все серии
-func (builder *SeriesBuilder) GetSeries() []*Series {
+func (builder *SeriesBuilder) GetSeries() []*types.Series {
 	return builder.series
 }
 
 // Возвращает обновлённые серии
-func (builder *SeriesBuilder) GetActiveSeries() []*Series {
+func (builder *SeriesBuilder) GetActiveSeries() []*types.Series {
 	builder.mutex.RLock()
 	defer builder.mutex.RUnlock()
 
-	activeSeries := make([]*Series, 0)
+	activeSeries := make([]*types.Series, 0)
 
 	for _, sr := range builder.series {
 		// проверяем последнюю точку серии

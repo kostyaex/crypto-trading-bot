@@ -2,10 +2,10 @@ package types
 
 // для добавления полей в интерактивное поле см strategy_settings_field.templ
 
-type StrategySettings struct {
+type StrategyConfig struct {
 	Symbol              string                 `mapstructure:"symbol"`   // используемая пара
 	Interval            string                 `mapstructure:"interval"` // используемый интервал для выборки данных биржи
-	Cluster             ClusterSettings        `mapstructure:"cluster"`
+	Cluster             ClusterConfig          `mapstructure:"cluster"`
 	SeriesBuilderConfig map[string]interface{} `mapstructure:"series_builder"`
-	DispatcherConfig    DispatcherSettings     `mapstructure:"dispatcher"`
+	DispatcherConfig    DispatcherConfig       `mapstructure:"dispatcher"`
 }
