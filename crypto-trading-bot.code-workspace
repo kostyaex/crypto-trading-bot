@@ -16,6 +16,9 @@
                 "username": "root",
                 "password": "kVA=Q04P"
             }
-        ]
+        ],
+        "search.exclude": {
+            "**/tmp/**": true
+        }
     }
 }

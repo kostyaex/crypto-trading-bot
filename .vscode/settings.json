@@ -1,0 +1,8 @@
+{
+    "problems.excludePatterns": [
+        "**/tmp/**",
+        "**/node_modules/**",
+        "**/vendor/**",
+        "**/backups/**"
+    ]
+}
