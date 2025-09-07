@@ -8,7 +8,7 @@ import (
 	"crypto-trading-bot/internal/core/repositories"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
-	"crypto-trading-bot/internal/stages"
+	"crypto-trading-bot/internal/service/source"
 	"crypto-trading-bot/internal/types"
 	"encoding/json"
 	"fmt"
@@ -75,10 +75,10 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	registry := initRegistry()
 
 	histSourceJson := json.RawMessage(`{
-		"symbol" : "BTCUSDT",
-		"interval" : "1s",
+		"symbol": "BTCUSDT",
+		"interval": "1s",
 		"start_time" : "2025-07-23T00:00:00Z",
-		"end_time" : "2025-07-23T01:00:00Z"
+		"end_time" : "2025-07-23T23:00:00Z"
 	}`)
 
 	comp, err := registry.Build("source", histSourceJson)
@@ -87,13 +87,13 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		return
 	}
 
-	source, ok := comp.(*components.HistoricalSourceSettings)
-	if ok {
-		fmt.Println(source.Symbol)
+	_source, err := source.NewHistoricalSource(basicServices.marketDataService, comp)
+	if err != nil {
+		fmt.Printf("Ошибка создания источника: %s", err)
+		return
 	}
 
-	stage := stages.HistoricalSource{}
-	stage.UpdateConfig(comp)
+	_source.Next()
 
 }
 
