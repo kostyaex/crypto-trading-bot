@@ -1,10 +1,11 @@
 package source
 
 import (
+	"context"
 	"crypto-trading-bot/internal/components"
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/types"
-	"fmt"
+	"crypto-trading-bot/pkg/pipeline"
 )
 
 type HistoricalSource struct {
@@ -42,15 +43,26 @@ func (s *HistoricalSource) UpdateConfig(comps ...types.Component) {
 	}
 }
 
-func (s *HistoricalSource) Next() bool {
+func (s *HistoricalSource) Next(context.Context) bool {
 	//fmt.Printf("data: %d\n", len(s.data))
 
 	if s.index == len(s.data) {
 		return false
 	}
 
-	fmt.Printf("data: %v\n", s.data[s.index])
+	//fmt.Printf("data: %v\n", s.data[s.index])
 
 	s.index++
 	return true
+}
+
+func (s *HistoricalSource) Error() error {
+	return nil
+}
+
+func (s *HistoricalSource) Payload() pipeline.Payload {
+
+	//p := payloadPool.Get().(*tradingPayload)
+	// p.CurrentPrice = s.data[s.index].ClosePrice
+
 }

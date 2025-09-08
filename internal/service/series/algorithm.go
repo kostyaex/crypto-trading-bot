@@ -1,6 +1,6 @@
 package series
 
-import "crypto-trading-bot/pkg/types"
+import "crypto-trading-bot/internal/types"
 
 type AlgorithmType string
 

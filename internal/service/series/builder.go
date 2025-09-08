@@ -1,7 +1,7 @@
 package series
 
 import (
-	"crypto-trading-bot/pkg/types"
+	"crypto-trading-bot/internal/types"
 	"fmt"
 	"sync"
 	"time"
