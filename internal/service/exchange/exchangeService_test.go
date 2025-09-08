@@ -1,9 +1,9 @@
 package exchange
 
 import (
-	"crypto-trading-bot/internal/core/config"
-	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/logger"
+	"crypto-trading-bot/internal/repositories"
 	"log"
 	"testing"
 	"time"

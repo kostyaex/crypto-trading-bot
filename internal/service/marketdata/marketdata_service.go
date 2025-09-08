@@ -2,9 +2,9 @@ package marketdata
 
 import (
 	"context"
-	"crypto-trading-bot/internal/core/config"
-	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/logger"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/types"
 	"fmt"

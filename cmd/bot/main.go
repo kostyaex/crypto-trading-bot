@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"crypto-trading-bot/internal/components"
-	"crypto-trading-bot/internal/core/config"
-	"crypto-trading-bot/internal/core/logger"
-	"crypto-trading-bot/internal/core/repositories"
+	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/logger"
+	"crypto-trading-bot/internal/processing"
+	"crypto-trading-bot/internal/processing/components"
+	"crypto-trading-bot/internal/processing/sampling"
+	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
-	"crypto-trading-bot/internal/service/source"
 	"crypto-trading-bot/internal/types"
+	"crypto-trading-bot/pkg/pipeline"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -87,14 +89,20 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		return
 	}
 
-	_source, err := source.NewHistoricalSource(basicServices.marketDataService, comp)
+	_, err = sampling.NewHistoricalSource(basicServices.marketDataService, comp)
 	if err != nil {
 		fmt.Printf("Ошибка создания источника: %s", err)
 		return
 	}
 
-	_source.Next(ctx)
+	symbSource := processing.NewSymbolSource([]processing.SymbolItem{
+		{"BTCUDST", "1s"},
+		{"BTCUDST", "5m"},
+		{"ETHUDST", "1m"},
+	})
 
+	_pipeline := pipeline.New()
+	_pipeline.Process(ctx, symbSource, &processing.LoggerSink{})
 }
 
 func initRegistry() *components.ComponentRegistry {

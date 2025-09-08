@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/logger"
 )
 
 type Repository struct {

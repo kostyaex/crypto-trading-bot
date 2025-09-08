@@ -1,7 +1,7 @@
 package exchange
 
 import (
-	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/logger"
 	"crypto-trading-bot/internal/types"
 	"encoding/json"
 	"fmt"

@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"crypto-trading-bot/internal/core/config"
-	"crypto-trading-bot/internal/core/logger"
+	"crypto-trading-bot/internal/config"
+	"crypto-trading-bot/internal/logger"
 	"fmt"
 	"log"
 	"testing"
