@@ -93,7 +93,7 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 		return
 	}
 
-	_source.Next()
+	_source.Next(ctx)
 
 }
 

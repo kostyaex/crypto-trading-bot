@@ -5,7 +5,6 @@ import (
 	"crypto-trading-bot/internal/components"
 	"crypto-trading-bot/internal/service/marketdata"
 	"crypto-trading-bot/internal/types"
-	"crypto-trading-bot/pkg/pipeline"
 )
 
 type HistoricalSource struct {
@@ -60,9 +59,9 @@ func (s *HistoricalSource) Error() error {
 	return nil
 }
 
-func (s *HistoricalSource) Payload() pipeline.Payload {
+// func (s *HistoricalSource) Payload() pipeline.Payload {
 
-	//p := payloadPool.Get().(*tradingPayload)
-	// p.CurrentPrice = s.data[s.index].ClosePrice
+// 	//p := payloadPool.Get().(*tradingPayload)
+// 	// p.CurrentPrice = s.data[s.index].ClosePrice
 
-}
+// }
