@@ -2,21 +2,22 @@ package sampling
 
 import (
 	"context"
+
 	"crypto-trading-bot/internal/processing"
-	"crypto-trading-bot/internal/processing/components"
 	"crypto-trading-bot/internal/service/marketdata"
+	"crypto-trading-bot/internal/settings"
 	"crypto-trading-bot/internal/types"
 	"crypto-trading-bot/pkg/pipeline"
 )
 
 type HistoricalSource struct {
-	settings          components.HistoricalSourceSettings
+	settings          settings.HistoricalSourceSettings
 	marketDataService *marketdata.MarketDataService
 	data              []*types.MarketData
 	index             int
 }
 
-func NewHistoricalSource(marketDataService marketdata.MarketDataService, comps ...types.Component) (*HistoricalSource, error) {
+func NewHistoricalSource(marketDataService marketdata.MarketDataService, comps ...settings.Settings) (*HistoricalSource, error) {
 
 	var err error
 
@@ -36,9 +37,9 @@ func NewHistoricalSource(marketDataService marketdata.MarketDataService, comps .
 	return s, err
 }
 
-func (s *HistoricalSource) UpdateConfig(comps ...types.Component) {
+func (s *HistoricalSource) UpdateConfig(comps ...settings.Settings) {
 	for _, c := range comps {
-		if val, ok := c.(*components.HistoricalSourceSettings); ok {
+		if val, ok := c.(*settings.HistoricalSourceSettings); ok {
 			s.settings = *val
 		}
 	}

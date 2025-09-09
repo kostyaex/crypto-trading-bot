@@ -1,7 +1,6 @@
-package components
+package settings
 
 import (
-	"crypto-trading-bot/internal/types"
 	"time"
 )
 
@@ -12,8 +11,8 @@ type HistoricalSourceSettings struct {
 	EndTime   time.Time `json:"end_time" validate:"required"`
 }
 
-func (d HistoricalSourceSettings) ComponentType() string {
+func (d HistoricalSourceSettings) SettingsType() string {
 	return "database"
 }
 
-var _ types.Component = HistoricalSourceSettings{}
+var _ Settings = HistoricalSourceSettings{}

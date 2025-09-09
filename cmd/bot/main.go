@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+
 	"crypto-trading-bot/internal/config"
 	"crypto-trading-bot/internal/logger"
 	"crypto-trading-bot/internal/processing"
-	"crypto-trading-bot/internal/processing/components"
 	"crypto-trading-bot/internal/processing/sampling"
 	"crypto-trading-bot/internal/repositories"
 	"crypto-trading-bot/internal/service/exchange"
 	"crypto-trading-bot/internal/service/marketdata"
-	"crypto-trading-bot/internal/types"
+	"crypto-trading-bot/internal/settings"
 	"crypto-trading-bot/pkg/pipeline"
 	"encoding/json"
 	"fmt"
@@ -105,11 +105,11 @@ func run(ctx context.Context, cancel context.CancelFunc) {
 	_pipeline.Process(ctx, symbSource, &processing.LoggerSink{})
 }
 
-func initRegistry() *components.ComponentRegistry {
-	reg := components.NewComponentRegistry()
+func initRegistry() *settings.SettingsRegistry {
+	reg := settings.NewSettingsRegistry()
 
-	reg.Register("source", func() types.Component {
-		return &components.HistoricalSourceSettings{}
+	reg.Register("source", func() settings.Settings {
+		return &settings.HistoricalSourceSettings{}
 	})
 
 	// Добавляй сюда новые компоненты — система сама их подхватит

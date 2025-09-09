@@ -1,17 +1,13 @@
-package components
+package settings
 
-import (
-	"crypto-trading-bot/internal/types"
-)
+// type ConfigAssembler struct {
+// 	repo     types.ComponentRepository
+// 	registry *ComponentRegistry
+// }
 
-type ConfigAssembler struct {
-	repo     types.ComponentRepository
-	registry *ComponentRegistry
-}
-
-func NewConfigAssembler(repo types.ComponentRepository, registry *ComponentRegistry) *ConfigAssembler {
-	return &ConfigAssembler{repo: repo, registry: registry}
-}
+// func NewConfigAssembler(repo types.ComponentRepository, registry *ComponentRegistry) *ConfigAssembler {
+// 	return &ConfigAssembler{repo: repo, registry: registry}
+// }
 
 //func (a *ConfigAssembler) BuildStageConfig(stage types.Stage) (*types.StageConfig, error) {
 //components, err := a.repo.GetByIDs(stage.Components)
