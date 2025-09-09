@@ -6,6 +6,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/PacktPublishing/Hands-On-Software-Engineering-with-Golang v0.0.0-20230706072115-8b501b01151f h1:6yggN8QeCaepYq6bpEAzXEd2BIsry981dMEif4gr9ic=
 github.com/PacktPublishing/Hands-On-Software-Engineering-with-Golang v0.0.0-20230706072115-8b501b01151f/go.mod h1:60eiV/MaxVGKIIcKylbIpUR/YwE5ZFdlt1Axl57uk/Y=
+github.com/andygeiss/ecs v0.3.12 h1:FR0DeQ4TeLgb5kHlR+nYNBxWtLLl7tuF4d9V1AG31Fo=
+github.com/andygeiss/ecs v0.3.12/go.mod h1:woHC0vrAxW11l0IhqaGvpTLnKSomiUHP3ZwvLdLkXPw=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
