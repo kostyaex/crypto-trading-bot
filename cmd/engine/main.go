@@ -2,11 +2,12 @@
 package main
 
 import (
+	"context"
 	"crypto-trading-bot/internal/engine/components"
 	"crypto-trading-bot/internal/engine/ecsx"
-	"crypto-trading-bot/internal/engine/resources"
 	"crypto-trading-bot/internal/engine/systems"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -22,10 +23,28 @@ const ModeBacktest = "backtest"
 
 func main() {
 
-	mode := os.Getenv("MODE")
-	if mode == "" {
-		mode = ModeBacktest // по умолчанию
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// // === Запускаем менеджер ===
+	// if err := manager.LoadAndStartAll(); err != nil {
+	//     log.Printf("Warning: failed to start some strategies: %v", err)
+	// }
+
+	// === Перехватываем сигналы ===
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-c
+		log.Printf("Получен сигнал: %s. Отправляем сигнал на завершение приложения...", sig)
+		cancel() // ← отправка сигнала Done
+
+		// Дополнительная задержка на завершение (опционально)
+		time.Sleep(1 * time.Second)
+		os.Exit(0)
+	}()
+
+	// =====================================================================
 
 	em := ecs.NewEntityManager()
 
@@ -36,58 +55,20 @@ func main() {
 
 	sm := ecs.NewSystemManager()
 
-	currentTime := resources.NewCurrentTime()
+	//currentTime := resources.NewCurrentTime()
 
-	// Режим: бэктест или live
-	if mode == ModeBacktest {
-		fmt.Println("🔄 Запуск в режиме бэктеста...")
-		candles := generateTestCandles(10)
-		sm.Add(systems.NewHistoricalTimeUpdateSystem(currentTime, candles))
-	} else {
-		sm.Add(systems.NewTimeUpdateSystem(currentTime))
-	}
-	sm.Add(systems.NewMonitoringSystem(currentTime))
+	fmt.Println("🔄 Запуск...")
+	sm.Add(systems.NewStopSystem(ctx))
+	//candles := generateTestCandles(10)
+	//sm.Add(systems.NewHistoricalTimeUpdateSystem(currentTime, candles))
+	//sm.Add(systems.NewTimeUpdateSystem(currentTime))
+	//sm.Add(systems.NewMonitoringSystem(currentTime))
 
 	de := ecsx.NewCustomEngine(em, sm)
 	de.Setup()
 	defer de.Teardown()
 
-	//de.Run()
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-
-	if mode == ModeBacktest {
-
-		for {
-			select {
-			case <-sig:
-				fmt.Println("\n🛑 Остановка...")
-				return
-			default:
-				de.Tick()
-				if de.IsDone() {
-					fmt.Println("\n✅Выполнено")
-					return
-				}
-			}
-		}
-
-	} else {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				de.Tick()
-			case <-sig:
-				fmt.Println("\n🛑 Остановка...")
-				//liveSys.Shutdown()
-				//goto exit
-				return
-			}
-		}
-	}
+	de.Run()
 
 }
 
