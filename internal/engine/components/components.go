@@ -1,5 +1,6 @@
 package components
 
 const (
-	MaskCurrentTime = uint64(1 << 0)
+	MaskDatasource = uint64(1 << 0)
+	MaskPosition   = uint64(1 << 1)
 )

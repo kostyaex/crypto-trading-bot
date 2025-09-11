@@ -8,8 +8,6 @@ import (
 	"crypto-trading-bot/internal/engine/systems"
 	"fmt"
 	"log"
-	"math"
-	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,21 +46,19 @@ func main() {
 
 	em := ecs.NewEntityManager()
 
-	// // компонент с текущим временем
-	// em.Add(ecs.NewEntity("currenttime", []ecs.Component{
-	// 	components.NewCurrentTime(),
-	// }))
+	em.Add(ecs.NewEntity("datasource", []ecs.Component{
+		components.NewDataSource(components.GenerateTestCandles(10)),
+	}))
+
+	em.Add(ecs.NewEntity("trader", []ecs.Component{
+		components.NewPosition(time.Time{}),
+	}))
 
 	sm := ecs.NewSystemManager()
 
-	//currentTime := resources.NewCurrentTime()
-
 	fmt.Println("🔄 Запуск...")
 	sm.Add(systems.NewStopSystem(ctx))
-	//candles := generateTestCandles(10)
-	//sm.Add(systems.NewHistoricalTimeUpdateSystem(currentTime, candles))
-	//sm.Add(systems.NewTimeUpdateSystem(currentTime))
-	//sm.Add(systems.NewMonitoringSystem(currentTime))
+	sm.Add(systems.NewMovementSystem())
 
 	de := ecsx.NewCustomEngine(em, sm)
 	de.Setup()
@@ -70,24 +66,4 @@ func main() {
 
 	de.Run()
 
-}
-
-// Генерация тестовых данных: тренд + шум
-func generateTestCandles(n int) []components.Candle {
-	candles := make([]components.Candle, n)
-	base := 40000.0
-	trend := 10.0
-	noise := 2000.0
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	for i := 0; i < n; i++ {
-		price := base + trend*float64(i) + noise*math.Sin(float64(i)/20)
-		price += (rand.Float64() - 0.5) * 1000 // шум
-		candles[i] = components.Candle{
-			Timestamp: time.Now().Unix() + int64(i)*60,
-			Close:     price,
-		}
-	}
-	return candles
 }
