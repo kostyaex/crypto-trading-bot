@@ -9,15 +9,23 @@ import (
 )
 
 type DataSource struct {
+	Symbol         string
+	Interval       string
 	data           []engine.MarketData
 	indexTimestamp map[time.Time]int // индекс записи по времени
+	//fetchDataCommands []exchange.FetchDataCommand // команды для получения данных
+
 }
 
-func NewDataSource(data []engine.MarketData) *DataSource {
+func NewDataSource(symbol string, interval string, data []engine.MarketData) *DataSource {
 	s := &DataSource{
-		data: data,
+		Symbol:   symbol,
+		Interval: interval,
+		data:     data,
+		//fetchDataCommands: fetchDataCommands,
 	}
 
+	// заполняем индекс по времени
 	s.indexTimestamp = make(map[time.Time]int, len(data))
 
 	for n, v := range data {

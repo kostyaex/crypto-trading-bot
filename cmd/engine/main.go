@@ -47,7 +47,11 @@ func main() {
 	em := ecs.NewEntityManager()
 
 	em.Add(ecs.NewEntity("datasource", []ecs.Component{
-		components.NewDataSource(components.GenerateTestCandles(10)),
+		components.NewDataSource("BTCUSDT", "1m", components.GenerateTestCandles(10)),
+	}))
+
+	em.Add(ecs.NewEntity("datasource", []ecs.Component{
+		components.NewDataSource("ETHUSDT", "1m", components.GenerateTestCandles(10)),
 	}))
 
 	em.Add(ecs.NewEntity("trader", []ecs.Component{
