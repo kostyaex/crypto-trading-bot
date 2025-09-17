@@ -44,19 +44,20 @@ func main() {
 
 	// =====================================================================
 
-	em := ecs.NewEntityManager()
+	//em := ecs.NewEntityManager()
+	em := ecsx.NewEntityManager()
 
-	em.Add(ecs.NewEntity("datasource", []ecs.Component{
+	em.Add(ecs.NewEntity("datasource1", []ecs.Component{
 		components.NewDataSource("BTCUSDT", "1m", components.GenerateTestCandles(10)),
 	}))
 
-	em.Add(ecs.NewEntity("datasource", []ecs.Component{
+	em.Add(ecs.NewEntity("datasource2", []ecs.Component{
 		components.NewDataSource("ETHUSDT", "1m", components.GenerateTestCandles(10)),
 	}))
 
-	em.Add(ecs.NewEntity("trader", []ecs.Component{
-		components.NewPosition(time.Time{}),
-	}))
+	// em.Add(ecs.NewEntity("trader", []ecs.Component{
+	// 	components.NewPosition(time.Time{}),
+	// }))
 
 	sm := ecs.NewSystemManager()
 
@@ -64,7 +65,7 @@ func main() {
 	sm.Add(systems.NewStopSystem(ctx))
 	sm.Add(systems.NewMovementSystem())
 
-	de := ecsx.NewCustomEngine(em, sm)
+	de := ecs.NewDefaultEngine(em, sm)
 	de.Setup()
 	defer de.Teardown()
 
