@@ -2,15 +2,16 @@ package systems
 
 import (
 	"context"
-	"crypto-trading-bot/internal/engine/components"
-	"crypto-trading-bot/internal/engine/service/exchange"
+	"crypto-trading-bot/internal/exchange"
+	"crypto-trading-bot/internal/exchange/exchanges/mockexchange"
+	"time"
 
 	"github.com/andygeiss/ecs"
 )
 
 type fetchDataSystem struct {
 	ctx      context.Context
-	executor *exchange.FetchDataExecutor
+	exchange exchange.Exchange
 }
 
 func NewFetchDataSystem(ctx context.Context) ecs.System {
@@ -19,12 +20,12 @@ func NewFetchDataSystem(ctx context.Context) ecs.System {
 		ctx: ctx,
 	}
 
-	// подготавливаем исполнитель
-	s.executor = exchange.NewFetchDataExecutor(ctx)
-	// for _, cmd := range fetchDataCommands {
-	// 	s.executor.SubmitCommand(cmd)
-	// 	fmt.Printf("📤 Submitted: %v\n", cmd)
-	// }
+	ex := mockexchange.NewMockExchange()
+	ex.DelayMin = 10 * time.Millisecond
+	ex.DelayMax = 50 * time.Millisecond
+
+	s.exchange = ex
+
 	return s
 }
 
@@ -33,16 +34,16 @@ func (s *fetchDataSystem) Process(em ecs.EntityManager) (state int) {
 	// выбираем все компоненты datasource, из них выбираем по каким символам и интервалам нужны данные.
 	// Группируем и отправляем команды для выборки
 
-	grouped := make(map[string]exchange.FetchDataCommand)
+	// grouped := make(map[string]exchange.FetchDataCommand)
 
-	for _, dataComp := range em.FilterByMask(components.MaskDatasource) {
+	// for _, dataComp := range em.FilterByMask(components.MaskDatasource) {
 
-		datasource := dataComp.Get(components.MaskDatasource).(*components.DataSource)
+	// 	datasource := dataComp.Get(components.MaskDatasource).(*components.DataSource)
 
-		key := datasource.Symbol + datasource.Interval
-		grouped[key] = exchange.FetchDataCommand{Symbol: datasource.Symbol, Interval: datasource.Interval}
+	// 	key := datasource.Symbol + datasource.Interval
+	// 	grouped[key] = exchange.FetchDataCommand{Symbol: datasource.Symbol, Interval: datasource.Interval}
 
-	}
+	// }
 
 	return ecs.StateEngineContinue
 }

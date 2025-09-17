@@ -18,7 +18,7 @@ func TestDataSource_NextPosition(t *testing.T) {
 		{Timestamp: t3},
 	}
 
-	ds := NewDataSource(testData)
+	ds := NewDataSource("BTCUDT", "1m", testData)
 
 	// Test case 1: Valid next timestamp
 	next, ok := ds.NextPosition(t1)

@@ -1,4 +1,4 @@
-package mock
+package mockexchange
 
 import (
 	"crypto-trading-bot/internal/exchange"
@@ -256,3 +256,5 @@ func (m *MockExchange) mockCandleStream() {
 		}
 	}
 }
+
+var _ exchange.Exchange = (*MockExchange)(nil)

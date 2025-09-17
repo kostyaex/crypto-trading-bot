@@ -1,4 +1,4 @@
-package mock
+package mockexchange
 
 import (
 	"crypto-trading-bot/internal/exchange"
