@@ -2,8 +2,10 @@ package systems
 
 import (
 	"context"
+	"crypto-trading-bot/internal/engine/ecsx"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/exchange/exchanges/mockexchange"
+	"fmt"
 	"time"
 
 	"github.com/andygeiss/ecs"
@@ -14,7 +16,7 @@ type fetchDataSystem struct {
 	exchange exchange.Exchange
 }
 
-func NewFetchDataSystem(ctx context.Context) ecs.System {
+func NewFetchDataSystem(ctx context.Context) *fetchDataSystem {
 
 	s := &fetchDataSystem{
 		ctx: ctx,
@@ -52,5 +54,14 @@ func (s *fetchDataSystem) Setup() {}
 
 func (s *fetchDataSystem) Teardown() {}
 
+func (s *fetchDataSystem) OnEntityAdded(entity *ecs.Entity, components []ecs.Component) {
+	fmt.Printf("[fetchdata] Add Entity %v\n", entity.Id)
+}
+
+func (s *fetchDataSystem) OnEntityRemoved(entity *ecs.Entity) {
+	fmt.Printf("[fetchdata] Remove Entity %v\n", entity.Id)
+}
+
 // Проверка соответствия интерфейсу
 var _ ecs.System = (*fetchDataSystem)(nil)
+var _ ecsx.EntityLifecycleListener = (*fetchDataSystem)(nil)

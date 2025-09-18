@@ -13,12 +13,12 @@ const (
 // EntityEvent — структура события
 type EntityEvent struct {
 	Type       EntityEventType
-	Entity     string
+	Entity     *ecs.Entity
 	Components []ecs.Component // только для Added
 }
 
 // EntityLifecycleListener — интерфейс для подписчиков
 type EntityLifecycleListener interface {
-	OnEntityAdded(e string, components []ecs.Component)
-	OnEntityRemoved(e string)
+	OnEntityAdded(Entity *ecs.Entity, components []ecs.Component)
+	OnEntityRemoved(Entity *ecs.Entity)
 }

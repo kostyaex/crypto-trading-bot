@@ -65,10 +65,24 @@ func main() {
 	sm.Add(systems.NewStopSystem(ctx))
 	sm.Add(systems.NewMovementSystem())
 
-	de := ecs.NewDefaultEngine(em, sm)
-	de.Setup()
-	defer de.Teardown()
+	fetchdataSystem := systems.NewFetchDataSystem(ctx)
+	sm.Add(fetchdataSystem)
 
-	de.Run()
+	em.AddListener(fetchdataSystem)
 
+	_engine := ecsx.NewCustomEngine(em, sm)
+	_engine.Setup()
+	defer _engine.Teardown()
+
+	go func() {
+		time.Sleep(time.Second)
+		_entity := ecs.NewEntity("datasource3", []ecs.Component{
+			components.NewDataSource("ETHUSDT", "5m", components.GenerateTestCandles(10)),
+		})
+		em.Add(_entity)
+		time.Sleep(time.Second)
+		em.Remove(_entity)
+	}()
+
+	_engine.Run()
 }
