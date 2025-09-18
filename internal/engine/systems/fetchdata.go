@@ -2,6 +2,7 @@ package systems
 
 import (
 	"context"
+	"crypto-trading-bot/internal/engine/components"
 	"crypto-trading-bot/internal/engine/ecsx"
 	"crypto-trading-bot/internal/exchange"
 	"crypto-trading-bot/internal/exchange/exchanges/mockexchange"
@@ -12,13 +13,16 @@ import (
 )
 
 type fetchDataSystem struct {
-	ctx      context.Context
-	exchange exchange.Exchange
+	em         ecs.EntityManager
+	ctx        context.Context
+	exchange   exchange.Exchange
+	subscribes map[string]int // map[Symbol+Interval]count - кол-во подписок на данный символ и интервал
 }
 
-func NewFetchDataSystem(ctx context.Context) *fetchDataSystem {
+func NewFetchDataSystem(ctx context.Context, em ecs.EntityManager) *fetchDataSystem {
 
 	s := &fetchDataSystem{
+		em:  em,
 		ctx: ctx,
 	}
 
@@ -33,33 +37,59 @@ func NewFetchDataSystem(ctx context.Context) *fetchDataSystem {
 
 func (s *fetchDataSystem) Process(em ecs.EntityManager) (state int) {
 
-	// выбираем все компоненты datasource, из них выбираем по каким символам и интервалам нужны данные.
-	// Группируем и отправляем команды для выборки
-
-	// grouped := make(map[string]exchange.FetchDataCommand)
-
-	// for _, dataComp := range em.FilterByMask(components.MaskDatasource) {
-
-	// 	datasource := dataComp.Get(components.MaskDatasource).(*components.DataSource)
-
-	// 	key := datasource.Symbol + datasource.Interval
-	// 	grouped[key] = exchange.FetchDataCommand{Symbol: datasource.Symbol, Interval: datasource.Interval}
-
-	// }
-
 	return ecs.StateEngineContinue
 }
 
-func (s *fetchDataSystem) Setup() {}
+func (s *fetchDataSystem) Setup() {
+	s.subscribes = make(map[string]int)
+}
 
-func (s *fetchDataSystem) Teardown() {}
+func (s *fetchDataSystem) Teardown() {
+	//fmt.Println("[fetchDataSystem | Teardown]")
+	for _, dataComp := range s.em.FilterByMask(components.MaskDatasource) {
 
-func (s *fetchDataSystem) OnEntityAdded(entity *ecs.Entity, components []ecs.Component) {
-	fmt.Printf("[fetchdata] Add Entity %v\n", entity.Id)
+		datasource := dataComp.Get(components.MaskDatasource).(*components.DataSource)
+
+		s.subscribes[dataSourceKey(datasource)]--
+		if s.subscribes[dataSourceKey(datasource)] == 0 {
+			fmt.Printf("[fetchDataSystem | Teardown] Unsubscribe %s %s\n", datasource.Symbol, datasource.Interval)
+		}
+
+	}
+}
+
+func (s *fetchDataSystem) OnEntityAdded(entity *ecs.Entity, _components []ecs.Component) {
+
+	datasource := entity.Get(components.MaskDatasource).(*components.DataSource)
+	if s.subscribes[dataSourceKey(datasource)] == 0 {
+		fmt.Printf("[fetchDataSystem] Subscribe %s %s\n", datasource.Symbol, datasource.Interval)
+	} else {
+		fmt.Printf("[fetchDataSystem] Alredy subscribed %s %s\n", datasource.Symbol, datasource.Interval)
+	}
+	s.subscribes[dataSourceKey(datasource)]++
+
 }
 
 func (s *fetchDataSystem) OnEntityRemoved(entity *ecs.Entity) {
-	fmt.Printf("[fetchdata] Remove Entity %v\n", entity.Id)
+	datasource := entity.Get(components.MaskDatasource).(*components.DataSource)
+	if s.subscribes[dataSourceKey(datasource)] == 0 {
+		fmt.Printf("[fetchDataSystem] Ошибка. Не было подписки на %s %s\n", datasource.Symbol, datasource.Interval)
+	}
+
+	s.subscribes[dataSourceKey(datasource)]--
+	if s.subscribes[dataSourceKey(datasource)] == 0 {
+		fmt.Printf("[fetchDataSystem] Unsubscribe %s %s\n", datasource.Symbol, datasource.Interval)
+	} else {
+		fmt.Printf("[fetchDataSystem] .. %s %s\n", datasource.Symbol, datasource.Interval)
+	}
+}
+
+func dataSourceKey(datasource *components.DataSource) string {
+	if datasource != nil {
+		return datasource.Symbol + datasource.Interval
+	} else {
+		return ""
+	}
 }
 
 // Проверка соответствия интерфейсу
