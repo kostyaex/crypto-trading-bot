@@ -3,6 +3,7 @@ package components
 
 import (
 	"crypto-trading-bot/internal/engine"
+	"crypto-trading-bot/internal/exchange"
 	"math"
 	"math/rand"
 	"time"
@@ -14,7 +15,7 @@ type DataSource struct {
 	data           []engine.MarketData
 	indexTimestamp map[time.Time]int // индекс записи по времени
 	//fetchDataCommands []exchange.FetchDataCommand // команды для получения данных
-
+	CmdId exchange.CommandID
 }
 
 func NewDataSource(symbol string, interval string, data []engine.MarketData) *DataSource {

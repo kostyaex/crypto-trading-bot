@@ -33,7 +33,7 @@ func NewBinanceExchange() *BinanceExchange {
 
 // Пример асинхронной команды
 func (b *BinanceExchange) FetchCandlesAsync(symbol, interval string, limit int) exchange.CommandID {
-	cmdID := exchange.CommandID(fmt.Sprintf("candles_%s_%s_%d", symbol, interval, time.Now().UnixNano()))
+	cmdID := exchange.GetCmdID("candles", symbol, interval)
 
 	go func() {
 		candles, err := b.fetchCandlesHTTP(symbol, interval, limit)
@@ -64,6 +64,7 @@ func (b *BinanceExchange) fetchCandlesHTTP(symbol, interval string, limit int) (
 	for _, item := range rawData {
 		candle := exchange.Candle{
 			Symbol:    symbol,
+			Interval:  interval,
 			Timestamp: time.UnixMilli(int64(item[0].(float64))),
 			Open:      toFloat64(item[1]),
 			High:      toFloat64(item[2]),
@@ -94,14 +95,28 @@ func (b *BinanceExchange) GetResult(cmdID exchange.CommandID) (interface{}, bool
 }
 
 // WebSocket подписка на свечи
-func (b *BinanceExchange) SubscribeCandles(symbol, interval string, handler func(exchange.Candle)) {
+func (b *BinanceExchange) SubscribeCandles(symbol, interval string) exchange.CommandID {
 	stream := fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval)
 	wsURL := "wss://stream.binance.com:9443/ws/" + stream
 
+	cmdID := exchange.GetCmdID("candles", symbol, interval)
+
+	handler := func(candle exchange.Candle, err error) {
+		if err != nil {
+			b.asyncMgr.StoreResult(cmdID, err)
+		} else {
+			candles := make([]exchange.Candle, 1)
+			candles[0] = candle
+			b.asyncMgr.StoreResult(cmdID, candles)
+		}
+	}
+
 	go b.connectWebSocket(wsURL, handler)
+
+	return cmdID
 }
 
-func (b *BinanceExchange) connectWebSocket(url string, handler func(exchange.Candle)) {
+func (b *BinanceExchange) connectWebSocket(url string, handler func(exchange.Candle, error)) {
 	dialer := websocket.Dialer{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
 	}
@@ -132,6 +147,7 @@ func (b *BinanceExchange) connectWebSocket(url string, handler func(exchange.Can
 		}
 
 		if err := json.Unmarshal(message, &msg); err != nil {
+			handler(exchange.Candle{}, err)
 			continue
 		}
 
@@ -145,7 +161,7 @@ func (b *BinanceExchange) connectWebSocket(url string, handler func(exchange.Can
 			Volume:    toFloat64(msg.K.V),
 		}
 
-		handler(candle)
+		handler(candle, nil)
 	}
 }
 

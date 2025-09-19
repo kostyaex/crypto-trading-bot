@@ -6,6 +6,7 @@ import (
 	"crypto-trading-bot/internal/engine/components"
 	"crypto-trading-bot/internal/engine/ecsx"
 	"crypto-trading-bot/internal/engine/systems"
+	"crypto-trading-bot/internal/exchange/exchanges/mockexchange"
 	"fmt"
 	"log"
 	"os"
@@ -44,6 +45,10 @@ func main() {
 
 	// =====================================================================
 
+	_exchange := mockexchange.NewMockExchange()
+	_exchange.DelayMin = 1 * time.Second
+	_exchange.DelayMax = 2 * time.Second
+
 	//em := ecs.NewEntityManager()
 	em := ecsx.NewEntityManager()
 
@@ -65,7 +70,7 @@ func main() {
 	sm.Add(systems.NewStopSystem(ctx))
 	sm.Add(systems.NewMovementSystem())
 
-	fetchdataSystem := systems.NewFetchDataSystem(ctx, em)
+	fetchdataSystem := systems.NewFetchDataSystem(ctx, em, _exchange)
 	sm.Add(fetchdataSystem)
 
 	em.AddListener(fetchdataSystem)
@@ -73,15 +78,15 @@ func main() {
 	_engine := ecsx.NewCustomEngine(em, sm)
 	_engine.Setup()
 
-	go func() {
-		time.Sleep(time.Second)
-		_entity := ecs.NewEntity("datasource3", []ecs.Component{
-			components.NewDataSource("ETHUSDT", "1m", components.GenerateTestCandles(10)),
-		})
-		em.Add(_entity)
-		time.Sleep(time.Second)
-		em.Remove(_entity)
-	}()
+	// go func() {
+	// 	time.Sleep(time.Second)
+	// 	_entity := ecs.NewEntity("datasource3", []ecs.Component{
+	// 		components.NewDataSource("ETHUSDT", "1m", components.GenerateTestCandles(10)),
+	// 	})
+	// 	em.Add(_entity)
+	// 	time.Sleep(time.Second)
+	// 	em.Remove(_entity)
+	// }()
 
 	defer _engine.Teardown()
 	_engine.Run()

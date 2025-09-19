@@ -1,5 +1,10 @@
 package exchange
 
+import (
+	"fmt"
+	"time"
+)
+
 // Exchange — интерфейс, который должны реализовать все биржи
 type Exchange interface {
 	// Асинхронные команды — возвращают ID для получения результата позже
@@ -9,10 +14,14 @@ type Exchange interface {
 	ClosePositionAsync(symbol string, side string) CommandID
 	FetchBalanceAsync(asset string) CommandID
 
-	// Получение результата по ID — неблокирующее
-	GetResult(cmdID CommandID) (interface{}, bool) // (результат, есть_ли_результат)
+	// Получение данных по ID — неблокирующее
+	PopCandle(cmdID CommandID) (Candle, bool, error) // (результат, есть_ли_результат)
 
 	// Опционально: подписка на стримы через WebSocket
-	SubscribeCandles(symbol string, interval string, handler func(Candle))
+	SubscribeCandles(symbol string, interval string) CommandID
 	UnsubscribeCandles(symbol string, interval string)
+}
+
+func GetCmdID(prefix, symbol, interval string) CommandID {
+	return CommandID(fmt.Sprintf("%s_%s_%s_%d", prefix, symbol, interval, time.Now().UnixNano()))
 }

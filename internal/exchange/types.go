@@ -4,6 +4,7 @@ import "time"
 
 type Candle struct {
 	Symbol    string
+	Interval  string
 	Timestamp time.Time
 	Open      float64
 	High      float64

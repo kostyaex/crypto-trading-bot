@@ -1,7 +1,7 @@
 package mockexchange
 
 import (
-	"crypto-trading-bot/internal/exchange"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -14,7 +14,7 @@ func TestMockExchange_FetchCandlesAsync(t *testing.T) {
 	cmdID := ex.FetchCandlesAsync("BTCUSDT", "1m", 5)
 
 	// Сразу результат не готов
-	if result, ok := ex.GetResult(cmdID); ok {
+	if result, ok, _ := ex.PopCandle(cmdID); ok {
 		t.Errorf("Expected no result immediately, got: %+v", result)
 	}
 
@@ -22,57 +22,62 @@ func TestMockExchange_FetchCandlesAsync(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Теперь должен быть результат
-	if result, ok := ex.GetResult(cmdID); !ok {
-		t.Fatal("Expected result after delay, got nothing")
-	} else {
-		candles, ok := result.([]exchange.Candle)
+	for i := 0; i < 5; i++ {
+		candle, ok, _ := ex.PopCandle(cmdID)
 		if !ok {
-			t.Fatalf("Expected []Candle, got %T", result)
+			t.Fatal("Пустой или не полный результат")
 		}
-		if len(candles) != 5 {
-			t.Errorf("Expected 5 candles, got %d", len(candles))
-		}
+		fmt.Printf("%v\n", candle)
 	}
+
 }
 
-func TestMockExchange_PlaceOrderAsync_ErrorSimulation(t *testing.T) {
-	ex := NewMockExchange()
-	ex.DelayMin = 10 * time.Millisecond
-	ex.DelayMax = 30 * time.Millisecond
-	ex.ErrRate = 1.0 // всегда ошибка
+// func TestMockExchange_PlaceOrderAsync_ErrorSimulation(t *testing.T) {
+// 	ex := NewMockExchange()
+// 	ex.DelayMin = 10 * time.Millisecond
+// 	ex.DelayMax = 30 * time.Millisecond
+// 	ex.ErrRate = 1.0 // всегда ошибка
 
-	cmdID := ex.PlaceOrderAsync(exchange.Order{
-		Symbol: "BTCUSDT",
-		Side:   "buy",
-		Type:   "market",
-		Amount: 0.01,
-	})
+// 	cmdID := ex.PlaceOrderAsync(exchange.Order{
+// 		Symbol: "BTCUSDT",
+// 		Side:   "buy",
+// 		Type:   "market",
+// 		Amount: 0.01,
+// 	})
 
-	time.Sleep(50 * time.Millisecond)
+// 	time.Sleep(50 * time.Millisecond)
 
-	if result, ok := ex.GetResult(cmdID); !ok {
-		t.Fatal("Expected error result, but got nothing")
-	} else {
-		if _, isErr := result.(error); !isErr {
-			t.Fatalf("Expected error, got %+v", result)
-		}
-	}
-}
+// 	if result, ok := ex.GetResult(cmdID); !ok {
+// 		t.Fatal("Expected error result, but got nothing")
+// 	} else {
+// 		if _, isErr := result.(error); !isErr {
+// 			t.Fatalf("Expected error, got %+v", result)
+// 		}
+// 	}
+// }
 
 func TestMockExchange_SubscribeCandles(t *testing.T) {
 	ex := NewMockExchange()
 
-	received := 0
-	ex.SubscribeCandles("BTCUSDT", "1m", func(c exchange.Candle) {
-		received++
-	})
+	cmdID := ex.SubscribeCandles("BTCUSDT", "1s")
 
+	num := 3
 	// Дадим стриму поработать
-	time.Sleep(3 * time.Second)
+	time.Sleep(time.Duration(num) * time.Second)
+
+	result, ok, err := ex.PopCandle(cmdID)
+
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	// Теперь должен быть результат
+	if !ok {
+		t.Fatal("Expected result after delay, got nothing")
+	}
+
+	fmt.Printf("%v\n", result)
+
 	ex.UnsubscribeCandles("BTCUSDT", "1m")
 
-	if received == 0 {
-		t.Error("Expected to receive at least one candle via WebSocket mock")
-	}
-	t.Logf("Received %d mock candles", received)
 }

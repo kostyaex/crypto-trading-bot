@@ -9,9 +9,12 @@ import (
 )
 
 type MockExchange struct {
-	asyncMgr *exchange.AsyncManager
-	results  map[exchange.CommandID]interface{}
-	mu       sync.RWMutex
+	//asyncMgr *exchange.AsyncManager
+	dataQueues map[exchange.CommandID]*exchange.PriorityQueueManager[exchange.Candle]
+	//orderQueues map[exchange.CommandID]*exchange.PriorityQueueManager[exchange.Order]
+	results map[exchange.CommandID]interface{}
+	mu      sync.RWMutex
+	err     error
 
 	// Настройки для тестов
 	DelayMin time.Duration // Минимальная задержка имитации
@@ -21,7 +24,9 @@ type MockExchange struct {
 
 func NewMockExchange() *MockExchange {
 	return &MockExchange{
-		asyncMgr: exchange.NewAsyncManager(10 * time.Minute),
+		//asyncMgr: exchange.NewAsyncManager(10 * time.Minute),
+		dataQueues: make(map[exchange.CommandID]*exchange.PriorityQueueManager[exchange.Candle]),
+		//orderQueues: make(map[exchange.CommandID]*exchange.PriorityQueueManager[exchange.Order]),
 		results:  make(map[exchange.CommandID]interface{}),
 		DelayMin: 50 * time.Millisecond,
 		DelayMax: 500 * time.Millisecond,
@@ -48,38 +53,48 @@ func (m *MockExchange) shouldError() bool {
 // ————————————————————————————————————————————————————————————————
 
 func (m *MockExchange) FetchCandlesAsync(symbol string, interval string, limit int) exchange.CommandID {
-	cmdID := exchange.CommandID(fmt.Sprintf("mock_candles_%s_%d", symbol, time.Now().UnixNano()))
+	cmdID := exchange.GetCmdID("mock_candles", symbol, interval)
 
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				m.asyncMgr.StoreResult(cmdID, fmt.Errorf("panic in mock: %v", r))
+				//m.asyncMgr.StoreResult(cmdID, fmt.Errorf("panic in mock: %v", r))
+				m.err = fmt.Errorf("panic in mock: %v", r)
 			}
 		}()
 
 		time.Sleep(m.randomDelay())
 
 		if m.shouldError() {
-			m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error fetching candles for %s", symbol))
+			//m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error fetching candles for %s", symbol))
+			m.err = fmt.Errorf("simulated error fetching candles for %s", symbol)
 			return
 		}
 
-		var candles []exchange.Candle
+		var candles []*exchange.Record[exchange.Candle]
 		now := time.Now()
 		for i := 0; i < limit; i++ {
 			ts := now.Add(time.Duration(-i) * time.Minute)
-			candles = append(candles, exchange.Candle{
-				Symbol:    symbol,
+			candles = append(candles, &exchange.Record[exchange.Candle]{
 				Timestamp: ts,
-				Open:      50000.0 + float64(i)*10,
-				High:      50100.0 + float64(i)*5,
-				Low:       49900.0 + float64(i)*5,
-				Close:     50050.0 + float64(i)*10,
-				Volume:    100.0 + float64(i),
+				Data: exchange.Candle{
+					Symbol:    symbol,
+					Interval:  interval,
+					Timestamp: ts,
+					Open:      50000.0 + float64(i)*10,
+					High:      50100.0 + float64(i)*5,
+					Low:       49900.0 + float64(i)*5,
+					Close:     50050.0 + float64(i)*10,
+					Volume:    100.0 + float64(i),
+				},
 			})
 		}
 
-		m.asyncMgr.StoreResult(cmdID, candles)
+		//m.asyncMgr.StoreResult(cmdID, candles)
+		if m.dataQueues[cmdID] == nil {
+			m.dataQueues[cmdID] = exchange.NewPriorityQueueManager[exchange.Candle]()
+		}
+		m.dataQueues[cmdID].PushBatch(candles...)
 	}()
 
 	return cmdID
@@ -88,21 +103,30 @@ func (m *MockExchange) FetchCandlesAsync(symbol string, interval string, limit i
 func (m *MockExchange) PlaceOrderAsync(order exchange.Order) exchange.CommandID {
 	cmdID := exchange.CommandID(fmt.Sprintf("mock_order_%s_%s", order.Symbol, time.Now().Format("20060102150405.999")))
 
-	go func() {
-		time.Sleep(m.randomDelay())
+	// go func() {
+	// 	time.Sleep(m.randomDelay())
 
-		if m.shouldError() {
-			m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated order rejection"))
-			return
-		}
+	// 	if m.shouldError() {
+	// 		//m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated order rejection"))
+	// 		m.err = fmt.Errorf("simulated order rejection")
+	// 		return
+	// 	}
 
-		// Имитируем успешный ордер
-		filledOrder := order
-		filledOrder.ID = "mock_order_id_" + time.Now().Format("20060102150405")
-		filledOrder.Status = "filled"
+	// 	// Имитируем успешный ордер
+	// 	filledOrder := order
+	// 	filledOrder.ID = "mock_order_id_" + time.Now().Format("20060102150405")
+	// 	filledOrder.Status = "filled"
 
-		m.asyncMgr.StoreResult(cmdID, filledOrder)
-	}()
+	// 	//m.asyncMgr.StoreResult(cmdID, filledOrder)
+	// 	if m.orderQueues[cmdID] == nil {
+	// 		m.orderQueues[cmdID] = exchange.NewPriorityQueueManager[exchange.Order]()
+	// 	}
+	// 	m.orderQueues[cmdID].PushBatch(&exchange.Record[exchange.Order]{
+	// 		Timestamp: time.Now(),
+	// 		Data:      filledOrder,
+	// 	})
+
+	// }()
 
 	return cmdID
 }
@@ -110,26 +134,27 @@ func (m *MockExchange) PlaceOrderAsync(order exchange.Order) exchange.CommandID 
 func (m *MockExchange) FetchOpenPositionsAsync(symbol string) exchange.CommandID {
 	cmdID := exchange.CommandID(fmt.Sprintf("mock_positions_%s_%d", symbol, time.Now().UnixNano()))
 
-	go func() {
-		time.Sleep(m.randomDelay())
+	// go func() {
+	// 	time.Sleep(m.randomDelay())
 
-		if m.shouldError() {
-			m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error fetching positions"))
-			return
-		}
+	// 	if m.shouldError() {
+	// 		//m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error fetching positions"))
+	// 		m.err = fmt.Errorf("simulated error fetching positions")
+	// 		return
+	// 	}
 
-		positions := []exchange.Position{
-			{
-				Symbol:        symbol,
-				Side:          "long",
-				Size:          0.1,
-				Entry:         50000.0,
-				UnrealizedPnL: 250.0,
-			},
-		}
+	// 	positions := []exchange.Position{
+	// 		{
+	// 			Symbol:        symbol,
+	// 			Side:          "long",
+	// 			Size:          0.1,
+	// 			Entry:         50000.0,
+	// 			UnrealizedPnL: 250.0,
+	// 		},
+	// 	}
 
-		m.asyncMgr.StoreResult(cmdID, positions)
-	}()
+	// 	m.asyncMgr.StoreResult(cmdID, positions)
+	// }()
 
 	return cmdID
 }
@@ -137,23 +162,23 @@ func (m *MockExchange) FetchOpenPositionsAsync(symbol string) exchange.CommandID
 func (m *MockExchange) ClosePositionAsync(symbol string, side string) exchange.CommandID {
 	cmdID := exchange.CommandID(fmt.Sprintf("mock_close_%s_%s_%d", symbol, side, time.Now().UnixNano()))
 
-	go func() {
-		time.Sleep(m.randomDelay())
+	// go func() {
+	// 	time.Sleep(m.randomDelay())
 
-		if m.shouldError() {
-			m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error closing position"))
-			return
-		}
+	// 	if m.shouldError() {
+	// 		m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated error closing position"))
+	// 		return
+	// 	}
 
-		result := map[string]interface{}{
-			"symbol": symbol,
-			"side":   side,
-			"status": "closed",
-			"time":   time.Now(),
-		}
+	// 	result := map[string]interface{}{
+	// 		"symbol": symbol,
+	// 		"side":   side,
+	// 		"status": "closed",
+	// 		"time":   time.Now(),
+	// 	}
 
-		m.asyncMgr.StoreResult(cmdID, result)
-	}()
+	// 	m.asyncMgr.StoreResult(cmdID, result)
+	// }()
 
 	return cmdID
 }
@@ -161,28 +186,47 @@ func (m *MockExchange) ClosePositionAsync(symbol string, side string) exchange.C
 func (m *MockExchange) FetchBalanceAsync(asset string) exchange.CommandID {
 	cmdID := exchange.CommandID(fmt.Sprintf("mock_balance_%s_%d", asset, time.Now().UnixNano()))
 
-	go func() {
-		time.Sleep(m.randomDelay())
+	// go func() {
+	// 	time.Sleep(m.randomDelay())
 
-		if m.shouldError() {
-			m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated balance fetch error"))
-			return
-		}
+	// 	if m.shouldError() {
+	// 		m.asyncMgr.StoreResult(cmdID, fmt.Errorf("simulated balance fetch error"))
+	// 		return
+	// 	}
 
-		balance := exchange.Balance{
-			Asset:  asset,
-			Free:   1000.0,
-			Locked: 50.0,
-		}
+	// 	balance := exchange.Balance{
+	// 		Asset:  asset,
+	// 		Free:   1000.0,
+	// 		Locked: 50.0,
+	// 	}
 
-		m.asyncMgr.StoreResult(cmdID, balance)
-	}()
+	// 	m.asyncMgr.StoreResult(cmdID, balance)
+	// }()
 
 	return cmdID
 }
 
-func (m *MockExchange) GetResult(cmdID exchange.CommandID) (interface{}, bool) {
-	return m.asyncMgr.GetResult(cmdID)
+//	func (m *MockExchange) GetResult(cmdID exchange.CommandID) (interface{}, bool) {
+//		return m.asyncMgr.GetResult(cmdID)
+//	}
+func (m *MockExchange) PopCandle(cmdID exchange.CommandID) (exchange.Candle, bool, error) {
+
+	if m.err != nil {
+		return exchange.Candle{}, false, m.err
+	}
+
+	q, ok := m.dataQueues[cmdID]
+	if !ok {
+		return exchange.Candle{}, false, fmt.Errorf("Не нашёл очередь для %s", cmdID)
+	}
+
+	record, ok := q.PopOne()
+
+	if !ok {
+		return exchange.Candle{}, ok, nil
+	}
+
+	return record.Data, ok, nil
 }
 
 // ————————————————————————————————————————————————————————————————
@@ -192,15 +236,31 @@ func (m *MockExchange) GetResult(cmdID exchange.CommandID) (interface{}, bool) {
 type candleHandler struct {
 	symbol   string
 	interval string
-	handler  func(exchange.Candle)
+	handler  func(exchange.Candle, error)
 }
 
 var mockCandleStreamHandlers []candleHandler
 var mockCandleStreamMu sync.RWMutex
 
-func (m *MockExchange) SubscribeCandles(symbol string, interval string, handler func(exchange.Candle)) {
+func (m *MockExchange) SubscribeCandles(symbol string, interval string) exchange.CommandID {
 	mockCandleStreamMu.Lock()
 	defer mockCandleStreamMu.Unlock()
+
+	cmdID := exchange.GetCmdID("mock_candles", symbol, interval)
+
+	handler := func(candle exchange.Candle, err error) {
+		if err != nil {
+			m.err = err
+		} else {
+			if m.dataQueues[cmdID] == nil {
+				m.dataQueues[cmdID] = exchange.NewPriorityQueueManager[exchange.Candle]()
+			}
+			m.dataQueues[cmdID].PushBatch(&exchange.Record[exchange.Candle]{
+				Timestamp: candle.Timestamp,
+				Data:      candle,
+			})
+		}
+	}
 
 	mockCandleStreamHandlers = append(mockCandleStreamHandlers, candleHandler{
 		symbol:   symbol,
@@ -210,8 +270,10 @@ func (m *MockExchange) SubscribeCandles(symbol string, interval string, handler 
 
 	// Запускаем генерацию свечей в фоне, если ещё не запущена
 	if len(mockCandleStreamHandlers) == 1 {
-		go m.mockCandleStream()
+		go m.mockCandleStream(symbol)
 	}
+
+	return cmdID
 }
 
 func (m *MockExchange) UnsubscribeCandles(symbol string, interval string) {
@@ -227,7 +289,7 @@ func (m *MockExchange) UnsubscribeCandles(symbol string, interval string) {
 	mockCandleStreamHandlers = newHandlers
 }
 
-func (m *MockExchange) mockCandleStream() {
+func (m *MockExchange) mockCandleStream(symbol string) {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -242,7 +304,7 @@ func (m *MockExchange) mockCandleStream() {
 		}
 
 		candle := exchange.Candle{
-			Symbol:    "BTCUSDT", // можно рандомизировать
+			Symbol:    symbol, // можно рандомизировать
 			Timestamp: time.Now(),
 			Open:      50000 + rand.Float64()*100,
 			High:      50100 + rand.Float64()*50,
@@ -252,7 +314,7 @@ func (m *MockExchange) mockCandleStream() {
 		}
 
 		for _, h := range handlers {
-			h.handler(candle)
+			h.handler(candle, nil)
 		}
 	}
 }
